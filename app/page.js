@@ -384,7 +384,7 @@ function LandingPage({ setPage }) {
 
             {/* STATS */}
             <div style={{ display:"flex", gap:"0", background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:"12px", overflow:"hidden" }}>
-              {[["10k+","Créateurs"],["99.2%","Précision IA"],["4.1M+","Générations"],["24","Styles"]].map(([v,l],i) => (
+              {[["10k+","Créateurs"],["99.2%","Précision IA"],["4.1M+","Vidéos traitées"],["< 60s","Par vidéo"]].map(([v,l],i) => (
                 <div key={i} style={{ flex:1, padding:"12px", textAlign:"center", borderRight: i<3 ? `1px solid ${C.border}` : "none" }}>
                   <div style={{ fontSize:"16px", fontWeight:800, letterSpacing:"-0.5px" }}>{v}</div>
                   <div style={{ fontSize:"10px", color:C.textMuted, marginTop:"2px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{l}</div>
@@ -517,9 +517,11 @@ function LandingPage({ setPage }) {
           <div style={{ width:"22px", height:"22px", borderRadius:"6px", background:C.grad, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"10px", color:"#fff", fontWeight:800 }}>C</div>
           <span style={{ fontWeight:700, fontSize:"14px" }}>ClearCut</span>
         </div>
-        <div style={{ fontSize:"12px", color:C.textDim }}>© 2026 ClearCut · Tous droits réservés</div>
+        <div style={{ fontSize:"12px", color:C.textDim, textAlign:"center" }}>
+          © 2026 ClearCut · KEVININDUSTRIE SAS · SIREN 932 737 992 · Paris
+        </div>
         <div style={{ display:"flex", gap:"20px" }}>
-          {["CGU","Confidentialité","Contact"].map(l => <span key={l} style={{ fontSize:"12px", color:C.textDim, cursor:"pointer" }}>{l}</span>)}
+          {[["CGU","cgu"],["Confidentialité","privacy"],["Contact","contact"]].map(([l,p]) => <span key={l} style={{ fontSize:"12px", color:C.textDim, cursor:"pointer", transition:"color 0.2s" }} onMouseEnter={e=>e.currentTarget.style.color=C.text} onMouseLeave={e=>e.currentTarget.style.color=C.textDim} onClick={()=>setPage(p)}>{l}</span>)}
         </div>
       </footer>
     </div>
@@ -1984,6 +1986,132 @@ function BlogPage({ setPage }) {
   );
 }
 
+// ─── CGU PAGE ─────────────────────────────────────────────────────────────────
+function CGUPage() {
+  const sections = [
+    { title:"1. Présentation de la société", content:`ClearCut est un service édité par la société KEVININDUSTRIE, SAS au capital de 500€, immatriculée au RCS de Paris sous le numéro SIREN 932 737 992, dont le siège social est situé à Paris, France.\n\nPrésident : Kevin Nedzvedsky\nDate de création : 05 septembre 2024\nContact : contact@clearcut.io` },
+    { title:"2. Objet", content:"Les présentes Conditions Générales d'Utilisation (CGU) ont pour objet de définir les modalités d'accès et d'utilisation du service ClearCut (ci-après « le Service »), accessible à l'adresse clearcut.io.\n\nToute utilisation du Service implique l'acceptation pleine et entière des présentes CGU." },
+    { title:"3. Description du Service", content:"ClearCut est un service SaaS (Software as a Service) permettant la suppression automatique de sous-titres incrustés dans des fichiers vidéo, grâce à des technologies d'intelligence artificielle.\n\nLe Service est accessible via abonnement mensuel ou annuel, ou via un quota de crédits gratuits limités." },
+    { title:"4. Accès au Service", content:"L'accès au Service nécessite la création d'un compte utilisateur. L'utilisateur s'engage à fournir des informations exactes et à maintenir la confidentialité de ses identifiants.\n\nL'utilisateur est seul responsable de toute utilisation faite depuis son compte. KEVININDUSTRIE se réserve le droit de suspendre ou supprimer tout compte en cas de violation des présentes CGU." },
+    { title:"5. Crédits et abonnements", content:"Le Service fonctionne sur la base d'un système de crédits. L'utilisateur dispose de 20 crédits offerts à l'inscription, puis de 10 crédits gratuits par mois sur le plan Free.\n\nLes abonnements payants (Pro, Creator, Business) sont facturés mensuellement ou annuellement via Stripe. Les paiements sont non remboursables sauf disposition légale contraire." },
+    { title:"6. Propriété intellectuelle", content:"Tous les éléments du Service (interface, algorithmes, marques, logos) sont la propriété exclusive de KEVININDUSTRIE et sont protégés par les lois françaises et internationales relatives à la propriété intellectuelle.\n\nL'utilisateur conserve l'intégralité des droits sur les vidéos qu'il uploade et traite via le Service." },
+    { title:"7. Données personnelles", content:"KEVININDUSTRIE traite les données personnelles des utilisateurs conformément à sa Politique de Confidentialité et au Règlement Général sur la Protection des Données (RGPD).\n\nLes vidéos uploadées sont automatiquement supprimées de nos serveurs dans un délai de 24 heures après traitement." },
+    { title:"8. Limitation de responsabilité", content:"KEVININDUSTRIE s'efforce d'assurer la disponibilité du Service 24h/24, 7j/7, mais ne peut garantir une disponibilité sans interruption.\n\nKEVININDUSTRIE ne saurait être tenue responsable des dommages directs ou indirects résultant de l'utilisation ou de l'impossibilité d'utiliser le Service." },
+    { title:"9. Droit applicable", content:"Les présentes CGU sont soumises au droit français. Tout litige relatif à leur interprétation ou exécution relève de la compétence exclusive des tribunaux de Paris." },
+    { title:"10. Modification des CGU", content:"KEVININDUSTRIE se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront informés de toute modification substantielle par email. L'utilisation continue du Service après modification vaut acceptation des nouvelles CGU.\n\nDernière mise à jour : Mars 2026" },
+  ];
+
+  return (
+    <div style={{ padding:"4rem 2rem", maxWidth:"800px", margin:"0 auto" }}>
+      <div style={{ marginBottom:"3rem" }}>
+        <div className="badge" style={{ background:"rgba(124,111,255,0.1)", color:C.accent, border:`1px solid rgba(124,111,255,0.2)`, marginBottom:"1rem" }}>Légal</div>
+        <h1 style={{ fontSize:"2.5rem", fontWeight:900, letterSpacing:"-1.5px", marginBottom:"10px" }}>Conditions Générales d'Utilisation</h1>
+        <p style={{ color:C.textMuted, fontSize:"14px" }}>En vigueur au 1er mars 2026 · KEVININDUSTRIE SAS</p>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+        {sections.map((s,i) => (
+          <div key={i} className="card">
+            <h2 style={{ fontSize:"15px", fontWeight:700, color:C.accent, marginBottom:"12px" }}>{s.title}</h2>
+            <p style={{ fontSize:"13px", color:C.textMuted, lineHeight:1.8, whiteSpace:"pre-line" }}>{s.content}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── PRIVACY PAGE ─────────────────────────────────────────────────────────────
+function PrivacyPage() {
+  const sections = [
+    { title:"1. Responsable du traitement", content:"KEVININDUSTRIE SAS\nSIREN : 932 737 992\nSiège : Paris, France\nPrésident : Kevin Nedzvedsky\nContact DPO : privacy@clearcut.io" },
+    { title:"2. Données collectées", content:"Nous collectons les données suivantes :\n\n• Données d'identification : nom, adresse email\n• Données de connexion : adresse IP, logs de connexion, cookies de session\n• Données de paiement : traitées directement par Stripe (nous ne stockons aucune donnée bancaire)\n• Données d'utilisation : historique de traitement, crédits consommés, préférences" },
+    { title:"3. Finalités du traitement", content:"Vos données sont utilisées pour :\n\n• Fournir et améliorer le Service\n• Gérer votre compte et votre abonnement\n• Envoyer des communications transactionnelles\n• Assurer la sécurité et prévenir la fraude\n• Respecter nos obligations légales" },
+    { title:"4. Base légale", content:"Le traitement de vos données repose sur :\n\n• L'exécution du contrat (fourniture du Service)\n• Votre consentement (cookies, communications marketing)\n• Notre intérêt légitime (sécurité, amélioration du Service)\n• Le respect de nos obligations légales" },
+    { title:"5. Conservation des données", content:"• Données de compte : durée de vie du compte + 3 ans\n• Vidéos uploadées : suppression automatique sous 24h après traitement\n• Données de facturation : 10 ans (obligation légale)\n• Logs de connexion : 12 mois" },
+    { title:"6. Partage des données", content:"Nous ne vendons jamais vos données. Nous partageons vos données uniquement avec :\n\n• Stripe (paiements) — conforme PCI DSS\n• Supabase (base de données) — hébergement UE\n• Replicate (traitement IA) — données vidéo uniquement, supprimées après traitement" },
+    { title:"7. Vos droits (RGPD)", content:"Conformément au RGPD, vous disposez des droits suivants :\n\n• Droit d'accès à vos données\n• Droit de rectification\n• Droit à l'effacement (« droit à l'oubli »)\n• Droit à la portabilité\n• Droit d'opposition au traitement\n\nPour exercer vos droits : privacy@clearcut.io\nRéponse sous 30 jours.\n\nVous pouvez également introduire une réclamation auprès de la CNIL (cnil.fr)." },
+    { title:"8. Cookies", content:"Nous utilisons des cookies techniques (nécessaires au fonctionnement) et analytiques (avec votre consentement).\n\nVous pouvez gérer vos préférences via la bannière cookies affichée lors de votre première visite.\n\nDernière mise à jour : Mars 2026" },
+  ];
+
+  return (
+    <div style={{ padding:"4rem 2rem", maxWidth:"800px", margin:"0 auto" }}>
+      <div style={{ marginBottom:"3rem" }}>
+        <div className="badge" style={{ background:"rgba(124,111,255,0.1)", color:C.accent, border:`1px solid rgba(124,111,255,0.2)`, marginBottom:"1rem" }}>Légal</div>
+        <h1 style={{ fontSize:"2.5rem", fontWeight:900, letterSpacing:"-1.5px", marginBottom:"10px" }}>Politique de Confidentialité</h1>
+        <p style={{ color:C.textMuted, fontSize:"14px" }}>En vigueur au 1er mars 2026 · Conforme RGPD</p>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+        {sections.map((s,i) => (
+          <div key={i} className="card">
+            <h2 style={{ fontSize:"15px", fontWeight:700, color:C.accent, marginBottom:"12px" }}>{s.title}</h2>
+            <p style={{ fontSize:"13px", color:C.textMuted, lineHeight:1.8, whiteSpace:"pre-line" }}>{s.content}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── CONTACT PAGE ─────────────────────────────────────────────────────────────
+function ContactPage() {
+  const [form, setForm] = useState({ name:"", email:"", subject:"", message:"" });
+  const [sent, setSent] = useState(false);
+  const subjects = ["Question sur mon abonnement","Problème technique","Demande de remboursement","Partenariat","Autre"];
+
+  return (
+    <div style={{ padding:"4rem 2rem", maxWidth:"800px", margin:"0 auto" }}>
+      <div style={{ textAlign:"center", marginBottom:"3rem" }}>
+        <div className="badge" style={{ background:"rgba(124,111,255,0.1)", color:C.accent, border:`1px solid rgba(124,111,255,0.2)`, marginBottom:"1rem" }}>Contact</div>
+        <h1 style={{ fontSize:"2.5rem", fontWeight:900, letterSpacing:"-1.5px", marginBottom:"10px" }}>On est là pour t'aider</h1>
+        <p style={{ color:C.textMuted, fontSize:"15px" }}>Réponse sous 24h en jours ouvrés</p>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.5rem", marginBottom:"2rem" }}>
+        {[
+          { icon:"📧", title:"Email", value:"contact@clearcut.io", sub:"Réponse sous 24h" },
+          { icon:"🏢", title:"Société", value:"KEVININDUSTRIE SAS", sub:"SIREN 932 737 992 · Paris" },
+        ].map((c,i) => (
+          <div key={i} className="card" style={{ textAlign:"center" }}>
+            <div style={{ fontSize:"28px", marginBottom:"8px" }}>{c.icon}</div>
+            <div style={{ fontSize:"13px", fontWeight:700, marginBottom:"4px" }}>{c.title}</div>
+            <div style={{ fontSize:"13px", color:C.accent }}>{c.value}</div>
+            <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"3px" }}>{c.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {sent ? (
+        <div className="card scale-in" style={{ textAlign:"center", padding:"3rem" }}>
+          <div style={{ fontSize:"48px", marginBottom:"1rem" }}>✅</div>
+          <h2 style={{ fontSize:"1.4rem", fontWeight:800, marginBottom:"8px" }}>Message envoyé !</h2>
+          <p style={{ color:C.textMuted, fontSize:"14px" }}>On te répond sous 24h. Vérifie tes spams si tu ne reçois rien.</p>
+        </div>
+      ) : (
+        <div className="card" style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+            <div><label style={{ fontSize:"12px", color:C.textMuted, marginBottom:"5px", display:"block" }}>Nom</label><input className="input" placeholder="Jean Dupont" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} /></div>
+            <div><label style={{ fontSize:"12px", color:C.textMuted, marginBottom:"5px", display:"block" }}>Email</label><input className="input" type="email" placeholder="jean@exemple.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} /></div>
+          </div>
+          <div>
+            <label style={{ fontSize:"12px", color:C.textMuted, marginBottom:"5px", display:"block" }}>Sujet</label>
+            <select style={{ width:"100%" }} value={form.subject} onChange={e=>setForm({...form,subject:e.target.value})}>
+              <option value="">Choisir un sujet…</option>
+              {subjects.map(s=><option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize:"12px", color:C.textMuted, marginBottom:"5px", display:"block" }}>Message</label>
+            <textarea className="input" rows={5} placeholder="Décris ton problème ou ta question..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{ resize:"vertical" }} />
+          </div>
+          <button className="btn-primary" style={{ padding:"13px", fontSize:"14px" }} onClick={()=>{ if(form.name&&form.email&&form.message) setSent(true); }}>
+            Envoyer le message →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── APP ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState("home");
@@ -2011,6 +2139,9 @@ export default function App() {
       case "settings": return <SettingsPage user={user} setUser={setUser} setPage={setPage} />;
       case "referral": return <ReferralPage user={user} />;
       case "admin":    return user?.isAdmin ? <AdminDashboard setPage={setPage} /> : <AuthPage type="login" setPage={setPage} setUser={setUser} showOnboarding={()=>setShowOnboarding(true)} onAdminLogin={(u)=>{ setUser(u); }} />;
+      case "cgu":      return <CGUPage />;
+      case "privacy":  return <PrivacyPage />;
+      case "contact":  return <ContactPage />;
       case "blog":     return <BlogPage setPage={setPage} />;
       case "features": return <FeaturesPage setPage={setPage} />;
       case "how":      return <HowItWorksPage setPage={setPage} />;
