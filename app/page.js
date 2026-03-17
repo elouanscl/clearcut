@@ -1571,15 +1571,31 @@ function AdminUsers() {
   const [search, setSearch] = useState("");
   const [filterPlan, setFilterPlan] = useState("Tous");
   const [editUser, setEditUser] = useState(null);
-  const [users, setUsers] = useState([
-    { id:1, name:"Sophie Martin",   email:"sophie@gmail.com",   plan:"Creator", credits:2840, videos:47, revenue:"147€", status:"actif",    joined:"12 Jan 2026" },
-    { id:2, name:"Théo Rousseau",   email:"theo@outlook.com",   plan:"Pro",     credits:312,  videos:18, revenue:"57€",  status:"actif",    joined:"28 Jan 2026" },
-    { id:3, name:"Camille Dubois",  email:"cam@gmail.com",      plan:"Free",    credits:4,    videos:3,  revenue:"0€",   status:"actif",    joined:"5 Fév 2026" },
-    { id:4, name:"Lucas Bernard",   email:"lucas@gmail.com",    plan:"Business",credits:8200, videos:124,revenue:"297€", status:"actif",    joined:"3 Jan 2026" },
-    { id:5, name:"Emma Leroy",      email:"emma@hotmail.com",   plan:"Pro",     credits:44,   videos:31, revenue:"57€",  status:"suspendu", joined:"20 Déc 2025" },
-    { id:6, name:"Nathan Moreau",   email:"nathan@gmail.com",   plan:"Creator", credits:1920, videos:63, revenue:"147€", status:"actif",    joined:"8 Fév 2026" },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
   const planColors = { Free:C.textMuted, Pro:C.accent2, Creator:C.accent, Business:C.pink };
+
+  useEffect(() => {
+    fetch('/api/admin/users')
+      .then(r => r.json())
+      .then(({ profiles }) => {
+        if (profiles) {
+          setUsers(profiles.map(p => ({
+            id: p.id,
+            name: p.name || "—",
+            email: p.email || "—",
+            plan: p.plan || "Free",
+            credits: p.credits || 0,
+            videos: 0,
+            revenue: "0€",
+            status: "actif",
+            joined: new Date(p.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" }),
+          })));
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   const filtered = users.filter(u =>
     (filterPlan === "Tous" || u.plan === filterPlan) &&
@@ -1593,14 +1609,27 @@ function AdminUsers() {
 
   return (
     <div>
-      <div style={{ display:"flex", gap:"10px", marginBottom:"1rem" }}>
+      <div style={{ display:"flex", gap:"10px", marginBottom:"1rem", alignItems:"center" }}>
         <input className="input" placeholder="🔍 Rechercher par nom ou email…" value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1 }} />
         <select value={filterPlan} onChange={e=>setFilterPlan(e.target.value)} style={{ width:"140px" }}>
           {["Tous","Free","Pro","Creator","Business"].map(p=><option key={p}>{p}</option>)}
         </select>
+        <div style={{ fontSize:"13px", color:C.textMuted, whiteSpace:"nowrap" }}>
+          <strong style={{ color:C.success }}>{users.length}</strong> utilisateurs réels
+        </div>
       </div>
 
-      <div className="card" style={{ padding:0, overflow:"hidden" }}>
+      {loading ? (
+        <div className="card" style={{ textAlign:"center", padding:"3rem", color:C.textMuted }}>
+          <div style={{ fontSize:"24px", marginBottom:"8px", animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</div>
+          <div>Chargement des utilisateurs...</div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card" style={{ textAlign:"center", padding:"3rem", color:C.textMuted }}>
+          Aucun utilisateur trouvé
+        </div>
+      ) : (
+        <div className="card" style={{ padding:0, overflow:"hidden" }}>
         <table>
           <thead><tr style={{ borderBottom:`1px solid ${C.border}` }}>
             {["Utilisateur","Plan","Crédits","Vidéos","Revenus","Statut","Inscrit",""].map((h,i)=>(
@@ -1630,7 +1659,8 @@ function AdminUsers() {
             ))}
           </tbody>
         </table>
-      </div>
+        </div>
+      )}
 
       {/* EDIT MODAL */}
       {editUser && (
