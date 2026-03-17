@@ -324,10 +324,6 @@ function Nav({ page, setPage, user, setUser, lang, setLang }) {
   );
 }
 
-    </nav>
-  );
-}
-
 // ─── MARQUEE ─────────────────────────────────────────────────────────────────
 function Marquee() {
   const items = ["TikTok","YouTube Shorts","Instagram Reels","Snapchat","LinkedIn","Twitter/X","Podcast","Twitch","YouTube","Dailymotion","Facebook","Pinterest"];
