@@ -2127,14 +2127,16 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
-          setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, id: session.user.id });
-          setPage("dashboard");
-        });
-      }
-    });
+    setTimeout(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
+            setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, id: session.user.id });
+            setPage("dashboard");
+          });
+        }
+      });
+    }, 500);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
