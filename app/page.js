@@ -209,10 +209,30 @@ function OnboardingModal({ onClose }) {
   );
 }
 
+// ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  fr: {
+    nav_features:"Fonctionnalités", nav_how:"Comment ça marche", nav_pricing:"Tarifs",
+    login:"Connexion", signup:"Commencer gratuit",
+    credits_left:"Crédits restants", credits:"crédits", buy_credits:"Recharger",
+    usage_history:"Historique d'utilisation", manage_account:"Gérer mon compte", referral:"Parrainer", sign_out:"Déconnexion",
+    dashboard:"Dashboard", upload:"Uploader une vidéo", batch:"Traitement batch",
+  },
+  en: {
+    nav_features:"Features", nav_how:"How it works", nav_pricing:"Pricing",
+    login:"Sign in", signup:"Start for free",
+    credits_left:"Credits left", credits:"credits", buy_credits:"Top up",
+    usage_history:"Usage history", manage_account:"Manage account", referral:"Refer friends", sign_out:"Sign out",
+    dashboard:"Dashboard", upload:"Upload video", batch:"Batch processing",
+  },
+};
+
 // ─── NAV ─────────────────────────────────────────────────────────────────────
-function Nav({ page, setPage, user, setUser }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const logout = () => { setUser(null); setPage("home"); };
+function Nav({ page, setPage, user, setUser, lang, setLang }) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const logout = () => { setUser(null); setPage("home"); setProfileOpen(false); };
+  const T = TRANSLATIONS[lang];
+  const creditPct = Math.min(100, (user?.credits / (user?.maxCredits || 20)) * 100);
 
   return (
     <nav style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 2rem", height:"64px", background:C.bgNav, backdropFilter:"blur(16px)", borderBottom:`1px solid ${C.border}`, position:"sticky", top:0, zIndex:100 }}>
@@ -222,35 +242,88 @@ function Nav({ page, setPage, user, setUser }) {
       </div>
 
       <div style={{ display:"flex", gap:"28px", alignItems:"center" }}>
-        {[["Fonctionnalités","features"],["Comment ça marche","how"],["Tarifs","pricing"],["Blog","blog"]].map(([l,p]) => (
+        {[[T.nav_features,"features"],[T.nav_how,"how"],[T.nav_pricing,"pricing"],["Blog","blog"]].map(([l,p]) => (
           <span key={p} className="nav-link" onClick={() => setPage(p)}>{l}</span>
         ))}
       </div>
 
       <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
+        {/* Language switcher */}
+        <button onClick={() => setLang(lang==="fr"?"en":"fr")} style={{ padding:"5px 10px", borderRadius:"8px", border:`1px solid ${C.borderL}`, background:"transparent", color:C.textMuted, cursor:"pointer", fontFamily:"inherit", fontSize:"12px", fontWeight:600 }}>
+          {lang === "fr" ? "🇬🇧 EN" : "🇫🇷 FR"}
+        </button>
+
         {user ? (
           <>
-            <span style={{ fontSize:"13px", color:C.textMuted }}>
-              <span style={{ width:"7px", height:"7px", borderRadius:"50%", background:C.success, display:"inline-block", marginRight:"6px" }} />
-              {user.credits} crédits
-            </span>
-            <button className="btn-secondary" style={{ padding:"8px 14px", fontSize:"13px", gap:"6px" }} onClick={() => setPage("referral")}>🎁 Parrainer</button>
             {user.isAdmin && (
-              <button style={{ padding:"8px 14px", fontSize:"13px", borderRadius:"10px", border:`1px solid rgba(248,113,113,0.4)`, background:"rgba(248,113,113,0.1)", color:C.danger, cursor:"pointer", fontFamily:"inherit", fontWeight:600, display:"inline-flex", alignItems:"center", gap:"6px", transition:"all 0.2s" }}
-                onMouseEnter={e=>{e.currentTarget.style.background="rgba(248,113,113,0.2)";}}
-                onMouseLeave={e=>{e.currentTarget.style.background="rgba(248,113,113,0.1)";}}
+              <button style={{ padding:"8px 14px", fontSize:"13px", borderRadius:"10px", border:`1px solid rgba(248,113,113,0.4)`, background:"rgba(248,113,113,0.1)", color:C.danger, cursor:"pointer", fontFamily:"inherit", fontWeight:600, display:"inline-flex", alignItems:"center", gap:"6px" }}
                 onClick={() => setPage("admin")}>⚙ Admin</button>
             )}
             <button className="btn-secondary" style={{ padding:"8px 14px", fontSize:"13px" }} onClick={() => setPage("dashboard")}>Dashboard</button>
-            <button className="btn-ghost" style={{ fontSize:"13px" }} onClick={logout}>Déconnexion</button>
+
+            {/* Profile dropdown */}
+            <div style={{ position:"relative" }}>
+              <div onClick={() => setProfileOpen(o=>!o)} style={{ width:"36px", height:"36px", borderRadius:"50%", background:C.grad, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", fontWeight:800, color:"#fff", cursor:"pointer", border:`2px solid ${profileOpen ? C.accent : "transparent"}`, transition:"border 0.2s" }}>
+                {user.name?.[0]?.toUpperCase() || "U"}
+              </div>
+              {profileOpen && (
+                <div className="scale-in" style={{ position:"absolute", right:0, top:"44px", width:"240px", background:C.bgCard, border:`1px solid ${C.borderL}`, borderRadius:"16px", padding:"8px", boxShadow:"0 20px 60px rgba(0,0,0,0.5)", zIndex:200 }}>
+                  {/* User info */}
+                  <div style={{ padding:"10px 12px", marginBottom:"4px" }}>
+                    <div style={{ fontWeight:700, fontSize:"14px" }}>{user.name}</div>
+                    <div style={{ fontSize:"11px", color:C.textMuted }}>{user.email}</div>
+                    <div style={{ fontSize:"11px", color:C.accent, marginTop:"2px" }}>Plan {user.plan}</div>
+                  </div>
+
+                  {/* Credits bar */}
+                  <div style={{ padding:"10px 12px", background:C.bgCard2, borderRadius:"10px", marginBottom:"6px" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
+                      <span style={{ fontSize:"12px", color:C.textMuted }}>{T.credits_left}</span>
+                      <span style={{ fontSize:"12px", fontWeight:700, color: creditPct < 20 ? C.danger : C.text }}>{user.credits} {T.credits}</span>
+                    </div>
+                    <div style={{ height:"4px", background:C.border, borderRadius:"999px", overflow:"hidden" }}>
+                      <div style={{ width:`${creditPct}%`, height:"100%", background: creditPct < 20 ? C.danger : C.grad, borderRadius:"999px" }} />
+                    </div>
+                    <button className="btn-primary" style={{ width:"100%", padding:"7px", fontSize:"12px", marginTop:"8px" }} onClick={()=>{setPage("pricing");setProfileOpen(false);}}>
+                      {T.buy_credits} →
+                    </button>
+                  </div>
+
+                  {/* Menu items */}
+                  {[
+                    { icon:"📊", label:T.usage_history, action:()=>{setPage("usage");setProfileOpen(false);} },
+                    { icon:"⚙", label:T.manage_account, action:()=>{setPage("settings");setProfileOpen(false);} },
+                    { icon:"🎁", label:T.referral, action:()=>{setPage("referral");setProfileOpen(false);} },
+                  ].map((item,i) => (
+                    <button key={i} onClick={item.action} style={{ width:"100%", display:"flex", alignItems:"center", gap:"10px", padding:"9px 12px", borderRadius:"8px", border:"none", background:"transparent", color:C.text, cursor:"pointer", fontFamily:"inherit", fontSize:"13px", textAlign:"left", transition:"background 0.15s" }}
+                      onMouseEnter={e=>e.currentTarget.style.background=C.bgCard2}
+                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <span>{item.icon}</span>{item.label}
+                    </button>
+                  ))}
+
+                  <div style={{ borderTop:`1px solid ${C.border}`, marginTop:"4px", paddingTop:"4px" }}>
+                    <button onClick={logout} style={{ width:"100%", display:"flex", alignItems:"center", gap:"10px", padding:"9px 12px", borderRadius:"8px", border:"none", background:"transparent", color:C.danger, cursor:"pointer", fontFamily:"inherit", fontSize:"13px", textAlign:"left", transition:"background 0.15s" }}
+                      onMouseEnter={e=>e.currentTarget.style.background="rgba(248,113,113,0.08)"}
+                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <span>→</span>{T.sign_out}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <>
-            <span className="nav-link" onClick={() => setPage("login")}>Connexion</span>
-            <button className="btn-primary" style={{ padding:"9px 18px", fontSize:"13px" }} onClick={() => setPage("signup")}>Commencer gratuit →</button>
+            <span className="nav-link" onClick={() => setPage("login")}>{T.login}</span>
+            <button className="btn-primary" style={{ padding:"9px 18px", fontSize:"13px" }} onClick={() => setPage("signup")}>{T.signup} →</button>
           </>
         )}
       </div>
+    </nav>
+  );
+}
+
     </nav>
   );
 }
@@ -370,8 +443,8 @@ function LandingPage({ setPage }) {
               <span style={{ background:C.gradText, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sous-titres</span><br/>
               en 1 clic ✦
             </h1>
-            <p style={{ fontSize:"16px", color:C.textMuted, lineHeight:1.8, marginBottom:"2rem", maxWidth:"420px" }}>
-              Colle ton lien ou uploade ta vidéo. L'IA détecte et supprime les sous-titres incrustés en <strong style={{ color:C.text }}>quelques secondes</strong>. Résultat HD garanti.
+            <p style={{ fontSize:"16px", color:C.textMuted, lineHeight:1.8, marginBottom:"2rem", maxWidth:"420px", textAlign:"center" }}>
+              Uploade ta vidéo. L'IA détecte et supprime les sous-titres incrustés en <strong style={{ color:C.text }}>quelques secondes</strong>. Résultat HD garanti.
             </p>
 
             <div style={{ display:"flex", gap:"12px", marginBottom:"2rem", flexWrap:"wrap" }}>
@@ -632,83 +705,137 @@ function AuthPage({ type, setPage, setUser, showOnboarding }) {
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-function Dashboard({ user, setPage }) {
+function Dashboard({ user, setPage, lang }) {
+  const T = TRANSLATIONS[lang||"fr"];
+  const maxCredits = user?.maxCredits || 20;
+  const creditPct = Math.min(100, ((user?.credits||0) / maxCredits) * 100);
+
   const jobs = [
-    { name:"tiktok_video.mp4", status:"done", credits:2, date:"Il y a 5 min", size:"45 MB" },
-    { name:"youtube_vlog.mp4", status:"done", credits:4, date:"Il y a 2h", size:"180 MB" },
-    { name:"anime_ep01.mkv", status:"processing", credits:8, date:"En cours", size:"720 MB" },
-    { name:"reel_mode.mp4", status:"error", credits:0, date:"Il y a 1j", size:"28 MB" },
+    { name:"tiktok_vlog.mp4",      status:"done",       credits:2,  date:"17 Mar, 11:30", size:"38 MB",  dur:"0:42" },
+    { name:"reel_insta.mp4",        status:"done",       credits:2,  date:"17 Mar, 10:15", size:"22 MB",  dur:"0:31" },
+    { name:"youtube_ep03.mp4",      status:"done",       credits:8,  date:"16 Mar, 18:44", size:"480 MB", dur:"4:12" },
+    { name:"anime_op.mkv",          status:"processing", credits:4,  date:"En cours",       size:"220 MB", dur:"1:30" },
+    { name:"batch_5_videos.zip",    status:"done",       credits:14, date:"15 Mar, 09:05", size:"1.2 GB", dur:"—" },
+    { name:"short_clip_fail.mp4",   status:"error",      credits:0,  date:"14 Mar, 21:30", size:"12 MB",  dur:"0:15" },
   ];
+
   const statusCfg = {
-    done:       { bg:"rgba(52,211,153,0.1)", color:C.success, label:"✓ Terminé" },
-    processing: { bg:"rgba(251,191,36,0.1)", color:C.warning, label:"⟳ En cours" },
-    error:      { bg:"rgba(248,113,113,0.1)", color:C.danger, label:"✕ Erreur" },
+    done:       { bg:"rgba(52,211,153,0.1)",  color:C.success, label:"✓ Terminé" },
+    processing: { bg:"rgba(251,191,36,0.1)",  color:C.warning, label:"⟳ En cours" },
+    error:      { bg:"rgba(248,113,113,0.1)", color:C.danger,  label:"✕ Erreur" },
   };
-  const creditPct = Math.min(100, (user.credits / 20) * 100);
+
+  const totalSpent = jobs.filter(j=>j.status!=="error").reduce((a,j)=>a+j.credits,0);
+  const barData = [2,4,8,3,14,2];
+  const maxBar = Math.max(...barData);
+  const days = ["L","M","M","J","V","S"];
 
   return (
     <div style={{ padding:"2rem", maxWidth:"1100px", margin:"0 auto" }}>
       <div style={{ marginBottom:"2rem" }}>
-        <h1 style={{ fontSize:"1.6rem", fontWeight:800, letterSpacing:"-0.8px" }}>Bonjour, {user.name.split(" ")[0]} 👋</h1>
+        <h1 style={{ fontSize:"1.6rem", fontWeight:800, letterSpacing:"-0.8px" }}>Bonjour, {user?.name?.split(" ")[0] || "!"} 👋</h1>
         <p style={{ color:C.textMuted, fontSize:"14px" }}>Voici un résumé de ton activité</p>
       </div>
 
-      {/* KPIs */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"1rem", marginBottom:"1.5rem" }}>
-        {[
-          { label:"Crédits restants", value:user.credits, sub:"Plan "+user.plan, color:C.accent },
-          { label:"Vidéos traitées", value:"12", sub:"ce mois-ci", color:C.cyan },
-          { label:"Temps économisé", value:"4h", sub:"estimé", color:C.success },
-          { label:"Plan actuel", value:user.plan, sub:"Gérer →", color:C.pink, onClick:()=>setPage("billing") },
-        ].map((k,i) => (
-          <div key={i} className="card" style={{ cursor: k.onClick ? "pointer" : "default" }} onClick={k.onClick}>
-            <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{k.label}</div>
-            <div style={{ fontSize:"1.8rem", fontWeight:800, letterSpacing:"-1px", color:k.color }}>{k.value}</div>
-            <div style={{ fontSize:"12px", color:C.textMuted, marginTop:"4px" }}>{k.sub}</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 320px", gap:"1.5rem", marginBottom:"1.5rem" }}>
+        {/* Left col */}
+        <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+          {/* KPIs */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"1rem" }}>
+            {[
+              { label:"Crédits restants", value:user?.credits||0, sub:`Plan ${user?.plan||"Free"}`, color:C.accent },
+              { label:"Vidéos traitées", value:jobs.filter(j=>j.status==="done").length, sub:"ce mois-ci", color:C.cyan },
+              { label:"Crédits utilisés", value:totalSpent, sub:"ce mois-ci", color:C.pink },
+            ].map((k,i) => (
+              <div key={i} className="card" style={{ padding:"1rem" }}>
+                <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{k.label}</div>
+                <div style={{ fontSize:"1.6rem", fontWeight:800, letterSpacing:"-0.5px", color:k.color }}>{k.value}</div>
+                <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"3px" }}>{k.sub}</div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* CREDIT BAR */}
-      <div className="card" style={{ marginBottom:"1.5rem" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"10px" }}>
-          <span style={{ fontSize:"13px", fontWeight:600 }}>Crédits utilisés ce mois</span>
-          <span style={{ fontSize:"13px", color:C.textMuted }}>{20 - user.credits} / 20</span>
+          {/* Credit bar */}
+          <div className="card">
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
+              <span style={{ fontSize:"13px", fontWeight:600 }}>Crédits utilisés ce mois</span>
+              <span style={{ fontSize:"13px", color: creditPct > 80 ? C.danger : C.textMuted }}>{totalSpent} / {maxCredits}</span>
+            </div>
+            <div style={{ height:"6px", background:C.bgCard2, borderRadius:"999px", overflow:"hidden", marginBottom:"8px" }}>
+              <div style={{ height:"100%", width:`${creditPct}%`, background: creditPct > 80 ? C.danger : C.grad, borderRadius:"999px", transition:"width 1s ease" }} />
+            </div>
+            {creditPct > 70 && (
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span style={{ fontSize:"12px", color:C.warning }}>⚠ Crédits bientôt épuisés</span>
+                <button className="btn-primary" style={{ padding:"5px 14px", fontSize:"12px" }} onClick={()=>setPage("pricing")}>Recharger →</button>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div style={{ display:"flex", gap:"10px" }}>
+            <button className="btn-primary" style={{ flex:1, padding:"12px", fontSize:"14px" }} onClick={()=>setPage("process")}>⬆ Uploader une vidéo</button>
+            <button className="btn-secondary" style={{ flex:1, padding:"12px", fontSize:"14px" }} onClick={()=>setPage("batch")}>📦 Traitement batch</button>
+          </div>
         </div>
-        <div style={{ height:"6px", background:C.bgCard2, borderRadius:"999px", overflow:"hidden" }}>
-          <div style={{ height:"100%", width:`${creditPct}%`, background:C.grad, borderRadius:"999px", transition:"width 1s ease" }} />
+
+        {/* Right col — usage chart */}
+        <div className="card">
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem" }}>
+            <span style={{ fontSize:"13px", fontWeight:600 }}>Dépenses (7 derniers jours)</span>
+            <button className="btn-ghost" style={{ fontSize:"12px", color:C.accent }} onClick={()=>setPage("usage")}>Voir tout →</button>
+          </div>
+          <div style={{ display:"flex", gap:"6px", alignItems:"flex-end", height:"80px", marginBottom:"8px" }}>
+            {barData.map((v,i)=>(
+              <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"4px" }}>
+                <div style={{ width:"100%", height:`${(v/maxBar)*70}px`, background:i===barData.length-1?C.grad:`${C.accent}44`, borderRadius:"4px 4px 0 0", transition:"height 0.3s" }} />
+                <span style={{ fontSize:"9px", color:C.textDim }}>{days[i]}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:"10px", display:"flex", justifyContent:"space-between" }}>
+            <div>
+              <div style={{ fontSize:"11px", color:C.textMuted }}>Total crédits</div>
+              <div style={{ fontWeight:700, color:C.accent }}>{barData.reduce((a,b)=>a+b,0)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize:"11px", color:C.textMuted }}>Coût estimé</div>
+              <div style={{ fontWeight:700, color:C.pink }}>{(barData.reduce((a,b)=>a+b,0)*0.024).toFixed(2)}€</div>
+            </div>
+            <div>
+              <div style={{ fontSize:"11px", color:C.textMuted }}>Générations</div>
+              <div style={{ fontWeight:700 }}>{jobs.filter(j=>j.status==="done").length}</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ACTIONS */}
-      <div style={{ display:"flex", gap:"10px", marginBottom:"1.5rem" }}>
-        <button className="btn-primary" style={{ fontSize:"14px" }} onClick={()=>setPage("process")}>⬆ Uploader une vidéo</button>
-        <button className="btn-secondary" style={{ fontSize:"14px" }} onClick={()=>setPage("batch")}>📦 Traitement batch</button>
-      </div>
-
-      {/* HISTORY */}
-      <div className="card">
-        <h3 style={{ fontSize:"14px", fontWeight:700, marginBottom:"1rem" }}>Historique récent</h3>
+      {/* History */}
+      <div className="card" style={{ padding:0, overflow:"hidden" }}>
+        <div style={{ padding:"14px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <span style={{ fontSize:"13px", fontWeight:700 }}>Historique récent</span>
+          <button className="btn-ghost" style={{ fontSize:"12px", color:C.accent }} onClick={()=>setPage("usage")}>Voir tout →</button>
+        </div>
         <table>
           <thead><tr style={{ borderBottom:`1px solid ${C.border}` }}>
-            {["Fichier","Taille","Crédits","Statut","Date","Action"].map((h,i)=>(
-              <th key={i} style={{ padding:"8px 12px", textAlign:i===0?"left":"center", fontSize:"11px", color:C.textMuted, fontWeight:500, textTransform:"uppercase", letterSpacing:"0.4px" }}>{h}</th>
+            {["Crédits","Fichier","Taille","Durée","Statut","Date",""].map((h,i)=>(
+              <th key={i} style={{ padding:"10px 16px", textAlign:i===0?"center":"left", fontSize:"11px", color:C.textMuted, fontWeight:500, textTransform:"uppercase" }}>{h}</th>
             ))}
           </tr></thead>
           <tbody>
             {jobs.map((j,i)=>{
               const sc = statusCfg[j.status];
               return (
-                <tr key={i} style={{ borderBottom: i<jobs.length-1 ? `1px solid ${C.border}` : "none" }}>
-                  <td style={{ padding:"12px" }}><span style={{ fontWeight:500, fontSize:"13px" }}>{j.name}</span></td>
-                  <td style={{ padding:"12px", textAlign:"center", fontSize:"12px", color:C.textMuted }}>{j.size}</td>
-                  <td style={{ padding:"12px", textAlign:"center", fontWeight:600, fontSize:"13px" }}>{j.credits > 0 ? `-${j.credits}` : "—"}</td>
-                  <td style={{ padding:"12px", textAlign:"center" }}>
-                    <span className="badge" style={{ background:sc.bg, color:sc.color, fontSize:"11px" }}>{sc.label}</span>
-                  </td>
-                  <td style={{ padding:"12px", textAlign:"center", fontSize:"12px", color:C.textMuted }}>{j.date}</td>
-                  <td style={{ padding:"12px", textAlign:"center" }}>
+                <tr key={i} style={{ borderBottom: i<jobs.length-1?`1px solid ${C.border}`:"none" }}>
+                  <td style={{ padding:"12px 16px", textAlign:"center", fontWeight:700, color: j.credits>0?C.danger:C.textDim }}>{j.credits>0?`-${j.credits}`:"—"}</td>
+                  <td style={{ padding:"12px 16px", fontWeight:500, fontSize:"13px" }}>{j.name}</td>
+                  <td style={{ padding:"12px 16px", fontSize:"12px", color:C.textMuted }}>{j.size}</td>
+                  <td style={{ padding:"12px 16px", fontSize:"12px", color:C.textMuted, fontFamily:"monospace" }}>{j.dur}</td>
+                  <td style={{ padding:"12px 16px" }}><span className="badge" style={{ background:sc.bg, color:sc.color, fontSize:"11px" }}>{sc.label}</span></td>
+                  <td style={{ padding:"12px 16px", fontSize:"11px", color:C.textDim }}>{j.date}</td>
+                  <td style={{ padding:"12px 16px" }}>
                     {j.status==="done" && <button className="btn-secondary" style={{ padding:"4px 12px", fontSize:"11px" }}>↓ Télécharger</button>}
+                    {j.status==="error" && <button className="btn-secondary" style={{ padding:"4px 12px", fontSize:"11px", color:C.warning }}>↻ Retry</button>}
                   </td>
                 </tr>
               );
@@ -793,9 +920,9 @@ function PricingPage({ setPage, setCheckoutPlan }) {
   const [cycle, setCycle] = useState("monthly");
   const plans = [
     { name:"Free", monthly:0, yearly:0, credits:20, perCredit:"—", features:["20 crédits offerts","10 crédits/mois","720p max","5 min par vidéo","Support communauté"] },
-    { name:"Pro", monthly:19, yearly:15, credits:800, perCredit:"0,024€", features:["800 crédits/mois","1080p max","30 min par vidéo","Support prioritaire","Accès API"] },
-    { name:"Creator", monthly:49, yearly:39, credits:3000, perCredit:"0,016€", features:["3 000 crédits/mois","4K max","Vidéos illimitées","Support dédié","API + Webhooks","Batch illimité"], popular:true },
-    { name:"Business", monthly:99, yearly:79, credits:10000, perCredit:"0,010€", features:["10 000 crédits/mois","4K max","SLA 99.9%","API avancée","White label","Manager dédié"] },
+    { name:"Pro", monthly:19, yearly:15, credits:500, perCredit:"0,038€", features:["500 crédits/mois","1080p max","30 min par vidéo","Support prioritaire","Accès API","= 250 vidéos/mois"] },
+    { name:"Creator", monthly:49, yearly:39, credits:1500, perCredit:"0,033€", features:["1 500 crédits/mois","4K max","Vidéos illimitées","Support dédié","API + Webhooks","Batch illimité","= 750 vidéos/mois"], popular:true },
+    { name:"Business", monthly:99, yearly:79, credits:4000, perCredit:"0,025€", features:["4 000 crédits/mois","4K max","SLA 99.9%","API avancée","White label","Manager dédié","= 2 000 vidéos/mois"] },
   ];
   const planColor = { Free:C.textMuted, Pro:C.accent2, Creator:C.accent, Business:C.pink };
 
@@ -1937,15 +2064,222 @@ function HowItWorksPage({ setPage }) {
 
 // ─── BLOG PAGE ────────────────────────────────────────────────────────────────
 function BlogPage({ setPage }) {
+  const [selectedArticle, setSelectedArticle] = useState(null);
+
   const articles = [
-    { tag:"Tutoriel", date:"10 Mar 2026", title:"Comment supprimer les sous-titres d'une vidéo TikTok en 2026", desc:"Guide complet pour supprimer les sous-titres incrustés de tes TikToks et Reels avant de les reposter sur d'autres plateformes.", read:"4 min", emoji:"📱" },
-    { tag:"Cas d'usage", date:"5 Mar 2026", title:"Réutiliser le contenu YouTube sans sous-titres : le guide du créateur", desc:"Stratégie complète pour maximiser la réutilisation de ton contenu vidéo sur plusieurs plateformes en supprimant les sous-titres.", read:"6 min", emoji:"🎬" },
-    { tag:"IA", date:"28 Fév 2026", title:"Comment fonctionne la suppression de sous-titres par IA ?", desc:"On vous explique en détail la technologie derrière ClearCut : inpainting vidéo, détection de texte et reconstruction du fond.", read:"8 min", emoji:"🤖" },
-    { tag:"Comparatif", date:"20 Fév 2026", title:"ClearCut vs méthodes manuelles : quel temps tu économises vraiment ?", desc:"On a comparé la suppression manuelle sous After Effects avec ClearCut. Les résultats parlent d'eux-mêmes.", read:"5 min", emoji:"⚡" },
-    { tag:"Tutoriel", date:"15 Fév 2026", title:"Supprimer les sous-titres d'anime en masse avec le batch processing", desc:"Comment traiter une saison entière d'anime pour supprimer les sous-titres de fansub grâce au mode batch de ClearCut.", read:"7 min", emoji:"🎌" },
-    { tag:"Mise à jour", date:"1 Fév 2026", title:"ClearCut v2.0 : 4K, traitement batch et nouvelles langues", desc:"Découvrez toutes les nouveautés de ClearCut v2.0 : support 4K, batch jusqu'à 50 vidéos et 12 nouvelles langues détectées.", read:"3 min", emoji:"🚀" },
+    { tag:"Tutoriel", date:"10 Mar 2026", title:"Comment supprimer les sous-titres d'une vidéo TikTok en 2026", desc:"Guide complet pour supprimer les sous-titres incrustés de tes TikToks et Reels avant de les reposter sur d'autres plateformes.", read:"4 min", emoji:"📱",
+      content:`## Pourquoi supprimer les sous-titres de tes TikToks ?
+
+Quand tu reposts une vidéo TikTok sur YouTube Shorts, Instagram Reels ou d'autres plateformes, les sous-titres incrustés posent problème. Ils cassent l'expérience visuelle et peuvent réduire la portée de ta vidéo.
+
+## La méthode avec ClearCut
+
+**Étape 1 — Upload ta vidéo**
+Connecte-toi à ClearCut et glisse ta vidéo TikTok dans la zone d'upload. Les formats MP4, MOV et WebM sont acceptés.
+
+**Étape 2 — L'IA détecte les sous-titres**
+Notre modèle analyse chaque frame de ta vidéo en moins de 30 secondes. Il identifie précisément la position de chaque texte incrusté.
+
+**Étape 3 — Reconstruction du fond**
+L'inpainting vidéo reconstruit le fond original à l'emplacement des sous-titres. Le résultat est indiscernable de la vidéo originale.
+
+**Étape 4 — Télécharge et reposte**
+Ta vidéo propre est prête en HD. Télécharge-la et reposte-la sur toutes tes plateformes.
+
+## Résultats typiques
+
+- Vidéo de 30 secondes : traitée en 15-20 secondes
+- Vidéo de 60 secondes : traitée en 30-40 secondes
+- Précision : 99.2% sur les sous-titres TikTok standard
+
+## Conclusion
+
+Avec ClearCut, tu peux reposter tes TikToks en quelques secondes sur toutes tes plateformes. C'est la solution la plus rapide du marché pour les créateurs qui publient en masse.` },
+
+    { tag:"Cas d'usage", date:"5 Mar 2026", title:"Réutiliser le contenu YouTube sans sous-titres : le guide du créateur", desc:"Stratégie complète pour maximiser la réutilisation de ton contenu vidéo sur plusieurs plateformes en supprimant les sous-titres.", read:"6 min", emoji:"🎬",
+      content:`## La stratégie du contenu recyclé
+
+Les créateurs YouTube les plus efficaces ne créent pas du contenu from scratch pour chaque plateforme. Ils recyclent intelligemment leurs vidéos existantes.
+
+## Pourquoi les sous-titres bloquent la réutilisation
+
+YouTube génère automatiquement des sous-titres pour l'accessibilité. Quand tu exportes une vidéo avec ces sous-titres incrustés, impossible de la réutiliser proprement sur TikTok ou Instagram qui ont leurs propres systèmes de sous-titres.
+
+## Le workflow optimal
+
+**1. Produis ta vidéo YouTube**
+Crée ton contenu normalement avec tes sous-titres YouTube.
+
+**2. Identifie les segments réutilisables**
+Repère les meilleurs moments de ta vidéo (hooks, points clés, moments forts).
+
+**3. Exporte les clips**
+Exporte les clips en MP4 depuis ton éditeur vidéo.
+
+**4. Supprime les sous-titres avec ClearCut**
+Upload tous tes clips en batch sur ClearCut. En quelques minutes, tu as tous tes clips propres.
+
+**5. Reposte sur toutes les plateformes**
+TikTok, Reels, Shorts — chaque plateforme reçoit une vidéo adaptée avec ses propres sous-titres.
+
+## Calcul du ROI
+
+Un créateur qui publie 3 vidéos YouTube/semaine peut générer 15-20 clips courts recyclés. Avec ClearCut, le traitement prend moins de 5 minutes pour l'ensemble du batch.` },
+
+    { tag:"IA", date:"28 Fév 2026", title:"Comment fonctionne la suppression de sous-titres par IA ?", desc:"On vous explique en détail la technologie derrière ClearCut : inpainting vidéo, détection de texte et reconstruction du fond.", read:"8 min", emoji:"🤖",
+      content:`## La technologie derrière ClearCut
+
+ClearCut utilise deux technologies d'IA combinées : la détection de texte et l'inpainting vidéo.
+
+## Étape 1 : Détection du texte
+
+Notre modèle de détection analyse chaque frame de la vidéo. Il identifie les régions contenant du texte en analysant les patterns visuels caractéristiques des sous-titres : contours nets, couleurs contrastées, position répétitive dans la frame.
+
+La détection fonctionne même sur des sous-titres animés, semi-transparents ou stylisés.
+
+## Étape 2 : Masking
+
+Une fois le texte détecté, le modèle génère un masque précis qui délimite exactement la zone occupée par les sous-titres sur chaque frame.
+
+## Étape 3 : Inpainting vidéo
+
+C'est là que la magie opère. L'inpainting vidéo reconstruit le fond de la vidéo à l'emplacement exact des sous-titres. Le modèle utilise les frames adjacentes (avant et après) pour deviner avec précision ce qui se trouve derrière le texte.
+
+Cette technique est bien plus efficace que l'inpainting image classique car elle peut exploiter la cohérence temporelle de la vidéo.
+
+## Pourquoi c'est différent des solutions concurrentes
+
+La plupart des outils utilisent simplement un flou ou une couleur unie pour masquer les sous-titres. ClearCut reconstruit réellement le fond, ce qui donne un résultat indiscernable de la vidéo originale.
+
+## Limites actuelles
+
+- Les sous-titres sur des fonds très complexes (patterns animés) peuvent parfois laisser des artefacts mineurs
+- Les vidéos avec plus de 50% de frames contenant des sous-titres prennent plus de temps à traiter` },
+
+    { tag:"Comparatif", date:"20 Fév 2026", title:"ClearCut vs méthodes manuelles : quel temps tu économises vraiment ?", desc:"On a comparé la suppression manuelle sous After Effects avec ClearCut. Les résultats parlent d'eux-mêmes.", read:"5 min", emoji:"⚡",
+      content:`## Le test : 10 vidéos TikTok de 30 secondes
+
+On a demandé à un monteur professionnel de supprimer les sous-titres de 10 vidéos TikTok standard en utilisant After Effects. Puis on a fait la même chose avec ClearCut.
+
+## Résultats After Effects
+
+- Temps moyen par vidéo : 12 minutes
+- Total pour 10 vidéos : 2h00
+- Qualité : excellente
+- Difficulté : nécessite maîtrise d'After Effects
+
+**Workflow After Effects :**
+1. Import de la vidéo (1 min)
+2. Identification des zones de texte (2 min)
+3. Masking frame par frame (6 min)
+4. Rendu (3 min)
+
+## Résultats ClearCut
+
+- Temps moyen par vidéo : 45 secondes
+- Total pour 10 vidéos en batch : 4 minutes
+- Qualité : 99.2% identique
+- Difficulté : aucune compétence requise
+
+## Conclusion
+
+ClearCut est **27x plus rapide** qu'After Effects pour cette tâche. Pour un créateur qui traite 50 vidéos par mois, c'est 10 heures économisées.
+
+À 50€/h pour un monteur freelance, ClearCut fait économiser 500€/mois — bien plus que le coût de l'abonnement Creator à 49€/mois.` },
+
+    { tag:"Tutoriel", date:"15 Fév 2026", title:"Supprimer les sous-titres d'anime en masse avec le batch processing", desc:"Comment traiter une saison entière d'anime pour supprimer les sous-titres de fansub grâce au mode batch de ClearCut.", read:"7 min", emoji:"🎌",
+      content:`## Le problème des sous-titres de fansub
+
+Les passionnés d'anime qui veulent retravailler des épisodes pour les réseaux sociaux se heurtent souvent au même problème : les sous-titres de fansub sont incrustés directement dans la vidéo et impossible à supprimer sans outil spécialisé.
+
+## ClearCut et les sous-titres d'anime
+
+Les sous-titres d'anime ont des caractéristiques particulières :
+- Position variable (pas toujours en bas de l'écran)
+- Styles variés (karaoke, dialogue, signes traduits)
+- Fonds parfois complexes
+
+Notre modèle a été entraîné spécifiquement sur ce type de contenu et atteint 97.8% de précision sur les sous-titres d'anime standard.
+
+## Traiter une saison entière en batch
+
+**Étape 1 — Prépare tes fichiers**
+Rassemble tous tes épisodes dans un dossier. ClearCut accepte MKV, MP4 et AVI.
+
+**Étape 2 — Upload en batch**
+Va sur ClearCut > Traitement batch. Glisse tous tes épisodes d'un coup (jusqu'à 50 fichiers).
+
+**Étape 3 — Lance le traitement**
+ClearCut traite tous les épisodes en parallèle sur nos GPU. Une saison de 12 épisodes de 24 minutes est traitée en environ 45 minutes.
+
+**Étape 4 — Télécharge le ZIP**
+Une fois le traitement terminé, télécharge ton ZIP contenant tous les épisodes propres.
+
+## Coût estimé
+
+Pour une saison de 12 épisodes de 24 minutes :
+- Crédits nécessaires : environ 144 crédits
+- Coût avec le plan Creator : inclus dans les 3000 crédits/mois` },
+
+    { tag:"Mise à jour", date:"1 Fév 2026", title:"ClearCut v2.0 : 4K, traitement batch et nouvelles langues", desc:"Découvrez toutes les nouveautés de ClearCut v2.0 : support 4K, batch jusqu'à 50 vidéos et 12 nouvelles langues détectées.", read:"3 min", emoji:"🚀",
+      content:`## ClearCut v2.0 est là !
+
+Après 3 mois de développement intensif, on est très fiers de sortir ClearCut v2.0. Cette mise à jour majeure apporte des fonctionnalités que vous nous avez massivement demandées.
+
+## Nouvelles fonctionnalités
+
+**Support 4K**
+ClearCut traite désormais les vidéos jusqu'en 4K (3840×2160). La qualité de reconstruction est maintenue à ce niveau de résolution.
+
+**Batch processing jusqu'à 50 vidéos**
+Vous pouvez maintenant uploader jusqu'à 50 vidéos en une seule fois. Toutes sont traitées en parallèle sur nos GPU et vous recevez un ZIP à télécharger.
+
+**12 nouvelles langues détectées**
+Notre modèle de détection supporte maintenant 47 langues dont : arabe, hindi, bengali, tamoul, hébreu, persan, et plus encore.
+
+**Interface repensée**
+Le dashboard a été entièrement redesigné avec l'historique détaillé, les statistiques d'utilisation et un meilleur suivi des crédits.
+
+## Améliorations de performance
+
+- Vitesse de traitement : +40% par rapport à v1
+- Précision de détection : améliorée de 96.8% à 99.2%
+- Temps de rendu 4K : optimisé de 40%
+
+## Merci à la communauté
+
+Ces fonctionnalités ont été développées grâce à vos retours. Continuez à nous envoyer vos suggestions sur contact@clearcut.io.` },
   ];
+
   const tagColor = { Tutoriel:C.accent, "Cas d'usage":C.cyan, IA:C.pink, Comparatif:C.warning, "Mise à jour":C.success };
+
+  if (selectedArticle !== null) {
+    const a = articles[selectedArticle];
+    return (
+      <div style={{ padding:"4rem 2rem", maxWidth:"720px", margin:"0 auto" }}>
+        <button className="btn-ghost" style={{ marginBottom:"2rem", display:"flex", alignItems:"center", gap:"8px", fontSize:"14px" }} onClick={()=>setSelectedArticle(null)}>← Retour au blog</button>
+        <div style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"1.5rem" }}>
+          <span className="badge" style={{ background:`${tagColor[a.tag]}18`, color:tagColor[a.tag] }}>{a.tag}</span>
+          <span style={{ fontSize:"12px", color:C.textDim }}>{a.date} · {a.read} de lecture</span>
+        </div>
+        <div style={{ fontSize:"52px", marginBottom:"1.5rem", textAlign:"center" }}>{a.emoji}</div>
+        <h1 style={{ fontSize:"2rem", fontWeight:900, letterSpacing:"-1px", marginBottom:"1rem", lineHeight:1.2 }}>{a.title}</h1>
+        <div style={{ fontSize:"14px", color:C.textMuted, lineHeight:1.8 }}>
+          {a.content.split('\n').map((line, i) => {
+            if (line.startsWith('## ')) return <h2 key={i} style={{ fontSize:"1.2rem", fontWeight:800, color:C.text, margin:"2rem 0 0.8rem", letterSpacing:"-0.5px" }}>{line.slice(3)}</h2>;
+            if (line.startsWith('**') && line.endsWith('**')) return <p key={i} style={{ fontWeight:700, color:C.text, margin:"0.8rem 0 0.4rem" }}>{line.slice(2,-2)}</p>;
+            if (line.startsWith('- ')) return <div key={i} style={{ display:"flex", gap:"8px", marginBottom:"4px" }}><span style={{ color:C.accent }}>•</span><span>{line.slice(2)}</span></div>;
+            if (line === '') return <br key={i} />;
+            return <p key={i} style={{ margin:"0.4rem 0" }}>{line}</p>;
+          })}
+        </div>
+        <div style={{ marginTop:"3rem", padding:"1.5rem", background:C.bgCard, borderRadius:"16px", textAlign:"center" }}>
+          <p style={{ color:C.textMuted, marginBottom:"1rem" }}>Prêt à essayer ClearCut ?</p>
+          <button className="btn-primary" style={{ padding:"12px 28px" }} onClick={()=>setPage("signup")}>Commencer gratuitement →</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding:"4rem 2rem", maxWidth:"1000px", margin:"0 auto" }}>
@@ -1955,8 +2289,8 @@ function BlogPage({ setPage }) {
         <p style={{ color:C.textMuted, fontSize:"15px" }}>Tutoriels, cas d'usage et actualités pour les créateurs de contenu</p>
       </div>
 
-      {/* Featured */}
-      <div className="card" style={{ display:"grid", gridTemplateColumns:"1fr 280px", gap:"2rem", marginBottom:"2rem", border:`1px solid ${C.borderL}` }}
+      <div className="card" style={{ display:"grid", gridTemplateColumns:"1fr 280px", gap:"2rem", marginBottom:"2rem", border:`1px solid ${C.borderL}`, cursor:"pointer" }}
+        onClick={()=>setSelectedArticle(0)}
         onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent+"44"}
         onMouseLeave={e=>e.currentTarget.style.borderColor=C.borderL}>
         <div>
@@ -1966,15 +2300,15 @@ function BlogPage({ setPage }) {
           </div>
           <h2 style={{ fontSize:"1.4rem", fontWeight:800, letterSpacing:"-0.5px", marginBottom:"10px", lineHeight:1.3 }}>{articles[0].title}</h2>
           <p style={{ fontSize:"14px", color:C.textMuted, lineHeight:1.7, marginBottom:"1.5rem" }}>{articles[0].desc}</p>
-          <button className="btn-primary" style={{ padding:"10px 20px", fontSize:"13px" }}>Lire l'article →</button>
+          <span style={{ color:C.accent, fontSize:"13px", fontWeight:600 }}>Lire l'article →</span>
         </div>
         <div style={{ background:C.bgCard2, borderRadius:"12px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"72px" }}>{articles[0].emoji}</div>
       </div>
 
-      {/* Grid */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"1rem" }}>
         {articles.slice(1).map((a,i) => (
           <div key={i} className="card" style={{ cursor:"pointer", transition:"transform 0.2s, border-color 0.2s" }}
+            onClick={()=>setSelectedArticle(i+1)}
             onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.borderColor=C.borderL;}}
             onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.borderColor=C.border;}}>
             <div style={{ fontSize:"32px", marginBottom:"10px" }}>{a.emoji}</div>
@@ -2118,6 +2452,190 @@ function ContactPage() {
   );
 }
 
+// ─── USAGE PAGE ───────────────────────────────────────────────────────────────
+function UsagePage({ user, setPage }) {
+  const [period, setPeriod] = useState("7j");
+  const history = [
+    { date:"17 Mar 2026, 11:30", feature:"Suppression sous-titres", file:"tiktok_vlog.mp4", credits:2, dur:"0:42" },
+    { date:"17 Mar 2026, 10:15", feature:"Suppression sous-titres", file:"reel_insta.mp4", credits:2, dur:"0:31" },
+    { date:"16 Mar 2026, 18:44", feature:"Suppression sous-titres", file:"youtube_ep03.mp4", credits:8, dur:"4:12" },
+    { date:"16 Mar 2026, 14:20", feature:"Suppression sous-titres", file:"anime_op.mkv", credits:4, dur:"1:30" },
+    { date:"15 Mar 2026, 09:05", feature:"Batch processing", file:"batch_5_videos.zip", credits:14, dur:"—" },
+    { date:"14 Mar 2026, 21:30", feature:"Suppression sous-titres", file:"short_clip.mp4", credits:2, dur:"0:28" },
+  ];
+  const totalSpent = history.reduce((a,h)=>a+h.credits,0);
+  const barData = [2,5,8,3,12,6,totalSpent];
+  const maxBar = Math.max(...barData);
+
+  return (
+    <div style={{ padding:"2rem", maxWidth:"900px", margin:"0 auto" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"2rem" }}>
+        <div>
+          <h1 style={{ fontSize:"1.6rem", fontWeight:800, letterSpacing:"-0.8px" }}>Historique d'utilisation</h1>
+          <p style={{ color:C.textMuted, fontSize:"13px" }}>Consulte ta consommation de crédits</p>
+        </div>
+        <div style={{ display:"flex", gap:"4px" }}>
+          {["7j","30j","90j"].map(p=>(
+            <button key={p} style={{ padding:"6px 14px", borderRadius:"8px", border:`1px solid ${period===p?C.accent:C.borderL}`, background: period===p?"rgba(124,111,255,0.1)":"transparent", color: period===p?C.accent:C.textMuted, cursor:"pointer", fontFamily:"inherit", fontSize:"12px" }} onClick={()=>setPeriod(p)}>{p}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"1rem", marginBottom:"1.5rem" }}>
+        {[
+          { l:"Coût total", v:"4.32€", col:C.accent },
+          { l:"Crédits utilisés", v:totalSpent, col:C.cyan },
+          { l:"Générations", v:history.length, col:C.pink },
+          { l:"Fonctionnalités", v:"1", col:C.warning },
+        ].map((s,i)=>(
+          <div key={i} className="card" style={{ padding:"1rem" }}>
+            <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"6px", textTransform:"uppercase" }}>{s.l}</div>
+            <div style={{ fontSize:"1.4rem", fontWeight:800, color:s.col }}>{s.v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Bar chart */}
+      <div className="card" style={{ marginBottom:"1.5rem" }}>
+        <div style={{ fontSize:"13px", fontWeight:600, marginBottom:"1rem" }}>Dépenses — {period}</div>
+        <div style={{ display:"flex", gap:"8px", alignItems:"flex-end", height:"80px" }}>
+          {barData.map((v,i)=>(
+            <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"4px" }}>
+              <div style={{ width:"100%", height:`${(v/maxBar)*70}px`, background:i===barData.length-1?C.grad:`${C.accent}44`, borderRadius:"4px 4px 0 0", transition:"height 0.3s" }} />
+              <span style={{ fontSize:"9px", color:C.textDim }}>{["L","M","M","J","V","S","A"][i]}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* History table */}
+      <div className="card" style={{ padding:0, overflow:"hidden" }}>
+        <div style={{ padding:"14px 16px", borderBottom:`1px solid ${C.border}`, fontSize:"13px", fontWeight:600 }}>Historique détaillé</div>
+        <table>
+          <thead><tr style={{ borderBottom:`1px solid ${C.border}` }}>
+            {["Crédits","Fonctionnalité","Fichier","Durée","Date"].map((h,i)=>(
+              <th key={i} style={{ padding:"10px 16px", textAlign:i===0?"center":"left", fontSize:"11px", color:C.textMuted, fontWeight:500, textTransform:"uppercase" }}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {history.map((h,i)=>(
+              <tr key={i} style={{ borderBottom: i<history.length-1?`1px solid ${C.border}`:"none" }}>
+                <td style={{ padding:"12px 16px", textAlign:"center", fontWeight:700, color:C.danger }}>-{h.credits}</td>
+                <td style={{ padding:"12px 16px", fontSize:"13px" }}>{h.feature}</td>
+                <td style={{ padding:"12px 16px", fontSize:"12px", color:C.textMuted, fontFamily:"monospace" }}>{h.file}</td>
+                <td style={{ padding:"12px 16px", fontSize:"12px", color:C.textMuted }}>{h.dur}</td>
+                <td style={{ padding:"12px 16px", fontSize:"11px", color:C.textDim }}>{h.date}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── BATCH PAGE ───────────────────────────────────────────────────────────────
+function BatchPage({ setPage, user, setUser }) {
+  const [files, setFiles] = useState([]);
+  const [processing, setProcessing] = useState(false);
+  const [done, setDone] = useState(false);
+  const [progress, setProgress] = useState({});
+
+  const addFiles = (newFiles) => {
+    const arr = Array.from(newFiles).slice(0, 50);
+    setFiles(prev => [...prev, ...arr.map(f => ({ file:f, id:Math.random().toString(36).slice(2) }))].slice(0,50));
+  };
+
+  const remove = (id) => setFiles(prev => prev.filter(f=>f.id!==id));
+
+  const startBatch = () => {
+    if (!files.length) return;
+    setProcessing(true);
+    files.forEach((f,i) => {
+      let p = 0;
+      const iv = setInterval(() => {
+        p += Math.random()*15+5;
+        if (p >= 100) { p=100; clearInterval(iv); }
+        setProgress(prev => ({...prev, [f.id]: Math.min(100,p)}));
+      }, 200 + i*100);
+    });
+    setTimeout(() => { setProcessing(false); setDone(true); }, 4000 + files.length*500);
+  };
+
+  const totalCredits = files.length * 2;
+
+  if (done) return (
+    <div style={{ padding:"2rem", maxWidth:"600px", margin:"0 auto", textAlign:"center" }}>
+      <div className="card scale-in" style={{ padding:"3rem" }}>
+        <div style={{ fontSize:"52px", marginBottom:"1rem" }}>🎉</div>
+        <h2 style={{ fontSize:"1.5rem", fontWeight:800, marginBottom:"8px" }}>Batch terminé !</h2>
+        <p style={{ color:C.textMuted, marginBottom:"2rem" }}>{files.length} vidéos traitées · {totalCredits} crédits utilisés</p>
+        <button className="btn-primary" style={{ width:"100%", padding:"14px", marginBottom:"10px" }}>⬇ Télécharger le ZIP</button>
+        <button className="btn-secondary" style={{ width:"100%", padding:"14px" }} onClick={()=>setPage("dashboard")}>← Retour au dashboard</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ padding:"2rem", maxWidth:"800px", margin:"0 auto" }}>
+      <h1 style={{ fontSize:"1.6rem", fontWeight:800, letterSpacing:"-0.8px", marginBottom:"0.5rem" }}>Traitement batch</h1>
+      <p style={{ color:C.textMuted, fontSize:"14px", marginBottom:"2rem" }}>Upload jusqu'à 50 vidéos — toutes traitées en parallèle → ZIP à télécharger</p>
+
+      {/* Drop zone */}
+      <div className="card" style={{ border:`2px dashed ${C.borderL}`, textAlign:"center", padding:"2.5rem", cursor:"pointer", marginBottom:"1.5rem" }}
+        onClick={()=>document.getElementById("batch-fi").click()}
+        onDragOver={e=>e.preventDefault()}
+        onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files);}}>
+        <input id="batch-fi" type="file" accept="video/*" multiple style={{ display:"none" }} onChange={e=>addFiles(e.target.files)} />
+        <div style={{ fontSize:"36px", marginBottom:"10px" }}>📦</div>
+        <div style={{ fontWeight:600, marginBottom:"4px" }}>Glisse tes vidéos ici</div>
+        <div style={{ fontSize:"13px", color:C.textMuted }}>ou clique pour sélectionner · Max 50 fichiers</div>
+      </div>
+
+      {files.length > 0 && (
+        <>
+          <div className="card" style={{ padding:0, overflow:"hidden", marginBottom:"1.5rem" }}>
+            <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:"13px", fontWeight:600 }}>{files.length} fichier{files.length>1?"s":""} · {totalCredits} crédits</span>
+              {!processing && <button className="btn-ghost" style={{ fontSize:"12px", color:C.danger }} onClick={()=>setFiles([])}>Tout supprimer</button>}
+            </div>
+            {files.map((f,i)=>(
+              <div key={f.id} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"10px 16px", borderBottom: i<files.length-1?`1px solid ${C.border}`:"none" }}>
+                <span style={{ fontSize:"18px" }}>🎬</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:"13px", fontWeight:500 }}>{f.file.name}</div>
+                  <div style={{ fontSize:"11px", color:C.textMuted }}>{(f.file.size/1024/1024).toFixed(1)} MB</div>
+                  {processing && (
+                    <div style={{ marginTop:"4px", height:"3px", background:C.border, borderRadius:"999px", overflow:"hidden" }}>
+                      <div style={{ width:`${progress[f.id]||0}%`, height:"100%", background: (progress[f.id]||0)>=100?C.success:C.grad, borderRadius:"999px", transition:"width 0.2s" }} />
+                    </div>
+                  )}
+                </div>
+                {!processing && <button className="btn-ghost" style={{ fontSize:"16px", color:C.textMuted }} onClick={()=>remove(f.id)}>×</button>}
+                {processing && <span style={{ fontSize:"11px", color: (progress[f.id]||0)>=100?C.success:C.textMuted }}>{(progress[f.id]||0)>=100?"✓":Math.round(progress[f.id]||0)+"%"}</span>}
+              </div>
+            ))}
+          </div>
+
+          {!processing && (
+            <button className="btn-primary" style={{ width:"100%", padding:"14px", fontSize:"15px" }} onClick={startBatch}>
+              ✦ Lancer le batch ({totalCredits} crédits)
+            </button>
+          )}
+          {processing && (
+            <div className="card" style={{ textAlign:"center", padding:"1.5rem" }}>
+              <div style={{ fontSize:"24px", marginBottom:"8px", animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</div>
+              <div style={{ fontWeight:600 }}>Traitement en cours…</div>
+              <div style={{ fontSize:"13px", color:C.textMuted, marginTop:"4px" }}>{Object.values(progress).filter(p=>p>=100).length} / {files.length} terminées</div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── APP ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState("home");
@@ -2125,13 +2643,14 @@ export default function App() {
   const [checkoutPlan, setCheckoutPlan] = useState(null);
   const [adminAuth, setAdminAuth] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [lang, setLang] = useState("fr");
 
   useEffect(() => {
     setTimeout(() => {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
-            setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, id: session.user.id });
+            setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, maxCredits: 20, id: session.user.id });
             setPage("dashboard");
           });
         }
@@ -2140,7 +2659,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
-          setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, id: session.user.id });
+          setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, maxCredits: 20, id: session.user.id });
           setPage("dashboard");
         });
       }
@@ -2149,23 +2668,25 @@ export default function App() {
   }, []);
 
   const requireAuth = (p) => {
-    const authPages = ["dashboard","process","result","batch","billing","settings","referral"];
+    const authPages = ["dashboard","process","result","batch","billing","settings","referral","usage","profile"];
     if (!user && authPages.includes(p)) setPage("login");
     else setPage(p);
   };
 
   const renderPage = () => {
     switch (page) {
-      case "home":     return <LandingPage setPage={requireAuth} />;
-      case "pricing":  return <PricingPage setPage={requireAuth} setCheckoutPlan={setCheckoutPlan} />;
+      case "home":     return <LandingPage setPage={requireAuth} lang={lang} />;
+      case "pricing":  return <PricingPage setPage={requireAuth} setCheckoutPlan={setCheckoutPlan} lang={lang} />;
       case "login":    return <AuthPage type="login" setPage={setPage} setUser={setUser} showOnboarding={()=>setShowOnboarding(true)} />;
       case "signup":   return <AuthPage type="signup" setPage={setPage} setUser={setUser} showOnboarding={()=>setShowOnboarding(true)} />;
       case "checkout": return <CheckoutPage plan={checkoutPlan} setPage={setPage} setUser={setUser} user={user} />;
-      case "dashboard":return <Dashboard user={user} setPage={setPage} />;
+      case "dashboard":return <Dashboard user={user} setPage={setPage} lang={lang} />;
       case "process":  return <ProcessPage setPage={setPage} />;
+      case "batch":    return <BatchPage setPage={setPage} user={user} setUser={setUser} />;
       case "billing":  return <BillingPage user={user} setPage={setPage} />;
       case "settings": return <SettingsPage user={user} setUser={setUser} setPage={setPage} />;
       case "referral": return <ReferralPage user={user} />;
+      case "usage":    return <UsagePage user={user} setPage={setPage} />;
       case "admin":    return user?.isAdmin ? <AdminDashboard setPage={setPage} /> : <AuthPage type="login" setPage={setPage} setUser={setUser} showOnboarding={()=>setShowOnboarding(true)} onAdminLogin={(u)=>{ setUser(u); }} />;
       case "cgu":      return <CGUPage />;
       case "privacy":  return <PrivacyPage />;
@@ -2173,21 +2694,18 @@ export default function App() {
       case "blog":     return <BlogPage setPage={setPage} />;
       case "features": return <FeaturesPage setPage={setPage} />;
       case "how":      return <HowItWorksPage setPage={setPage} />;
-      default:         return <LandingPage setPage={requireAuth} />;
+      default:         return <LandingPage setPage={requireAuth} lang={lang} />;
     }
   };
 
   return (
     <div style={{ minHeight:"100vh", background:C.bg, color:C.text, fontFamily:"'Inter', system-ui, sans-serif" }}>
       <style>{gStyle}</style>
-
       <CursorFollower />
       <CookieBanner />
       <ExitIntentPopup />
       {showOnboarding && <OnboardingModal onClose={()=>setShowOnboarding(false)} />}
-
-      <Nav page={page} setPage={requireAuth} user={user} setUser={setUser} />
-
+      <Nav page={page} setPage={requireAuth} user={user} setUser={setUser} lang={lang} setLang={setLang} />
       {renderPage()}
       <AIChatWidget />
     </div>
