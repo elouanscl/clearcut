@@ -11,9 +11,9 @@ export async function POST(request) {
     },
     body: JSON.stringify({
       from: 'ClearCut <onboarding@resend.dev>',
-      to: 'elouan.lvv@gmail.com
-      subject: '🎉 Nouvel inscrit sur ClearCut !',
-      html: `<h2>Nouvel utilisateur inscrit</h2><p><strong>Nom :</strong> ${name}</p><p><strong>Email :</strong> ${email}</p><p><strong>Date :</strong> ${new Date().toLocaleString('fr-FR')}</p>`,
+      to: 'elouan.lvv@gmail.com',
+      subject: 'Nouvel inscrit sur ClearCut !',
+      html: '<h2>Nouvel utilisateur</h2><p>Nom : ' + name + '</p><p>Email : ' + email + '</p>',
     }),
   })
 
