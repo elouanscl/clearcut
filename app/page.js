@@ -548,7 +548,7 @@ function AuthPage({ type, setPage, setUser, showOnboarding }) {
     if (type === "signup") {
       const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
       if (error) { alert(error.message); setLoading(false); return; }
-      const u = { name: name || email.split("@")[0], email, plan:"Free", credits:20, id: data.user?.id };
+      const u = { name: name || email.split("@")[0], email, plan:"Free", credits:20, id: data.user.id };
       setUser(u);
       showOnboarding();
       setPage("dashboard");
@@ -2125,26 +2125,6 @@ export default function App() {
   const [checkoutPlan, setCheckoutPlan] = useState(null);
   const [adminAuth, setAdminAuth] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
-          setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, id: session.user.id });
-          setPage("dashboard");
-        });
-      }
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
-          setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, id: session.user.id });
-          setPage("dashboard");
-        });
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   const requireAuth = (p) => {
     const authPages = ["dashboard","process","result","batch","billing","settings","referral"];
