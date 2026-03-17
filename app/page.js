@@ -619,6 +619,8 @@ function AuthPage({ type, setPage, setUser, showOnboarding }) {
       if (error) { alert(error.message); setLoading(false); return; }
       const u = { name: name || email.split("@")[0], email, plan:"Free", credits:20, id: data.user?.id };
       setUser(u);
+      // Notify admin of new signup
+      fetch('/api/notify-signup', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: u.name, email }) }).catch(()=>{});
       showOnboarding();
       setPage("dashboard");
     } else {
