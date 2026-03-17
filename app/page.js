@@ -1,6 +1,5 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { supabase } from '../lib/supabase';
 
 // ─── ADMIN CREDENTIALS ───────────────────────────────────────────────────────
 const ADMIN_EMAIL = "admin@clearcut.io";
@@ -537,36 +536,31 @@ function AuthPage({ type, setPage, setUser, showOnboarding }) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handle = async () => {
+  const handle = () => {
     setLoading(true);
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const adminUser = { name:"Admin", email, plan:"Business", credits:9999, isAdmin:true };
-      setUser(adminUser);
-      setTimeout(() => { setPage("admin"); setLoading(false); }, 50);
-      return;
-    }
-    if (type === "signup") {
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-      if (error) { alert(error.message); setLoading(false); return; }
-      const u = { name: name || email.split("@")[0], email, plan:"Free", credits:20, id: data.user.id };
+    setTimeout(() => {
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        const adminUser = { name:"Admin", email, plan:"Business", credits:9999, isAdmin:true };
+        setUser(adminUser);
+        setTimeout(() => { setPage("admin"); setLoading(false); }, 50);
+        return;
+      }
+      const u = { name: name || email.split("@")[0], email, plan:"Free", credits:20 };
       setUser(u);
-      showOnboarding();
+      if (type === "signup") showOnboarding();
       setPage("dashboard");
-    } else {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { alert(error.message); setLoading(false); return; }
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-      setUser({ name: profile?.name || email.split("@")[0], email, plan: profile?.plan || "Free", credits: profile?.credits || 20, id: data.user.id });
-      setPage("dashboard");
-    }
-    setLoading(false);
+      setLoading(false);
+    }, 900);
   };
 
-  const handleGoogle = async () => {
+  const handleGoogle = () => {
     setGoogleLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${process.env.NEXT_PUBLIC_URL}/auth/callback` } });
-    if (error) alert(error.message);
-    setGoogleLoading(false);
+    setTimeout(() => {
+      setUser({ name:"Jean Dupont", email:"jean.dupont@gmail.com", plan:"Free", credits:20, google:true });
+      if (type === "signup") showOnboarding();
+      setPage("dashboard");
+      setGoogleLoading(false);
+    }, 1400);
   };
 
   return (
