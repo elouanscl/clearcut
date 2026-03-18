@@ -1459,327 +1459,138 @@ function AdminDashboard({ setPage }) {
 
 // ── Analytics ──
 function AdminAnalytics() {
-  const [period, setPeriod] = useState("30j");
-  const [metric, setMetric] = useState("mrr");
-  const [tooltip, setTooltip] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(null);
-  const svgRef = useRef(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const periods = ["7j","30j","90j","12m","YTD"];
+  useEffect(() => {
+    fetch('/api/admin/stats')
+      .then(r => r.json())
+      .then(data => { setStats(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
-  const chartData = {
-    mrr:     [3100,3250,3400,3550,3700,3800,3950,4100,4300,4500,4700,4820],
-    users:   [1200,1280,1350,1420,1500,1580,1650,1720,1780,1840,1890,1924],
-    videos:  [8200,8800,9100,9600,10200,10800,11200,11800,12400,13100,13800,14200],
-    credits: [82000,88000,91000,96000,102000,108000,112000,118000,124000,131000,138000,142000],
-  };
-  const months = ["Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc","Jan","Fév","Mar"];
-  const metricLabels = { mrr:"MRR (€)", users:"Utilisateurs", videos:"Vidéos/jour", credits:"Crédits utilisés" };
-  const metricColors = { mrr:C.accent, users:C.cyan, videos:C.pink, credits:C.warning };
+  if (loading) return (
+    <div style={{ textAlign:"center", padding:"3rem", color:C.textMuted }}>
+      <div style={{ fontSize:"24px", animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</div>
+      <div style={{ marginTop:"8px" }}>Chargement des stats...</div>
+    </div>
+  );
 
-  const data = chartData[metric];
-  const maxVal = Math.max(...data);
-  const minVal = Math.min(...data);
-  const W = 700, H = 180, PAD = 10;
-  const pts = data.map((v,i) => ({ x: PAD + (i/(data.length-1))*(W-PAD*2), y: PAD + (1-(v-minVal)/(maxVal-minVal||1))*(H-PAD*2) }));
-  const pathD = pts.map((p,i)=>i===0?`M${p.x},${p.y}`:`L${p.x},${p.y}`).join(" ");
-  const areaD = `${pathD} L${pts[pts.length-1].x},${H} L${pts[0].x},${H} Z`;
+  const plans = { Free:0, Pro:19, Creator:49, Business:99 };
+  const mrr = stats?.mrr || 0;
+  const arr = mrr * 12;
+  const totalUsers = stats?.totalUsers || 0;
+  const planCount = stats?.planCount || {};
+  const profiles = stats?.profiles || [];
 
-  const handleSvgMove = (e) => {
-    if (!svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const xPct = (e.clientX - rect.left) / rect.width;
-    const idx = Math.round(xPct * (data.length - 1));
-    if (idx >= 0 && idx < data.length) {
-      const pt = pts[idx];
-      setTooltip({ idx, x: (pt.x/W)*100, y: (pt.y/H)*100, value: data[idx] });
-    }
-  };
+  // Calcul inscriptions par jour (7 derniers jours)
+  const last7 = Array(7).fill(0);
+  const days7 = ["L","M","M","J","V","S","D"];
+  profiles.forEach(p => {
+    const d = new Date(p.created_at);
+    const diff = Math.floor((Date.now() - d.getTime()) / (1000*60*60*24));
+    if (diff < 7) last7[6-diff]++;
+  });
+  const maxBar = Math.max(...last7, 1);
 
-  const monthlyRevenue = [
-    { m:"Oct",  pro:1240, creator:980, biz:600, credits:180 },
-    { m:"Nov",  pro:1310, creator:1050, biz:650, credits:210 },
-    { m:"Déc",  pro:1380, creator:1120, biz:720, credits:240 },
-    { m:"Jan",  pro:1420, creator:1180, biz:750, credits:260 },
-    { m:"Fév",  pro:1480, creator:1240, biz:780, credits:290 },
-    { m:"Mar",  pro:1540, creator:1300, biz:820, credits:320 },
-  ];
-  const maxRev = Math.max(...monthlyRevenue.map(r=>r.pro+r.creator+r.biz+r.credits));
-
-  const selM = selectedMonth !== null ? monthlyRevenue[selectedMonth] : null;
+  // Répartition plans
+  const planColors = { Free:C.textMuted, Pro:C.accent2, Creator:C.accent, Business:C.pink };
+  const planPercent = (plan) => totalUsers > 0 ? Math.round(((planCount[plan]||0)/totalUsers)*100) : 0;
 
   return (
     <div>
-      {/* KPIs */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:"10px", marginBottom:"1.5rem" }}>
+      {/* KPIs réels */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"10px", marginBottom:"1.5rem" }}>
         {[
-          { l:"MRR", v:"4 820€", c:"+12.4%", col:C.accent },
-          { l:"ARR", v:"57 840€", c:"+14.1%", col:C.accent2 },
-          { l:"Utilisateurs actifs", v:"1 924", c:"+8.7%", col:C.cyan },
-          { l:"Churn rate", v:"2.3%", c:"−0.4pt", col:C.success },
-          { l:"ARPU", v:"2.51€", c:"+3.2%", col:C.pink },
-          { l:"Vidéos/jour", v:"474", c:"+6.8%", col:C.warning },
+          { l:"MRR estimé", v:`${mrr}€`, sub:"basé sur les plans actifs", col:C.accent },
+          { l:"ARR estimé", v:`${arr}€`, sub:"projection annuelle", col:C.accent2 },
+          { l:"Utilisateurs", v:totalUsers, sub:"inscrits au total", col:C.cyan },
+          { l:"Payants", v:(totalUsers-(planCount.Free||0)), sub:`${totalUsers>0?Math.round(((totalUsers-(planCount.Free||0))/totalUsers)*100):0}% de conversion`, col:C.success },
         ].map((k,i) => (
           <div key={i} className="card" style={{ padding:"1rem" }}>
             <div style={{ fontSize:"10px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"6px" }}>{k.l}</div>
-            <div style={{ fontSize:"1.2rem", fontWeight:800, letterSpacing:"-0.5px", color:k.col }}>{k.v}</div>
-            <div style={{ fontSize:"11px", color:C.success, marginTop:"3px" }}>▲ {k.c}</div>
+            <div style={{ fontSize:"1.4rem", fontWeight:800, letterSpacing:"-0.5px", color:k.col }}>{k.v}</div>
+            <div style={{ fontSize:"11px", color:C.textDim, marginTop:"3px" }}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* CHART */}
-      <div className="card" style={{ marginBottom:"1.5rem" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem" }}>
-          <div style={{ display:"flex", gap:"6px" }}>
-            {Object.entries(metricLabels).map(([k,l]) => (
-              <button key={k} style={{ padding:"5px 12px", borderRadius:"8px", border:`1px solid ${metric===k ? metricColors[k]+"55" : C.borderL}`, background: metric===k ? `${metricColors[k]}15` : "transparent", color: metric===k ? metricColors[k] : C.textMuted, cursor:"pointer", fontFamily:"inherit", fontSize:"11px", fontWeight:600, transition:"all 0.15s" }} onClick={()=>setMetric(k)}>{l}</button>
-            ))}
-          </div>
-          <div style={{ display:"flex", gap:"4px" }}>
-            {periods.map(p => (
-              <button key={p} style={{ padding:"4px 10px", borderRadius:"6px", border:`1px solid ${period===p ? C.borderL : "transparent"}`, background: period===p ? C.bgCard2 : "transparent", color: period===p ? C.text : C.textMuted, cursor:"pointer", fontFamily:"inherit", fontSize:"11px", fontWeight:500 }} onClick={()=>setPeriod(p)}>{p}</button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ position:"relative" }} onMouseLeave={()=>setTooltip(null)}>
-          <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:"180px", overflow:"visible" }} onMouseMove={handleSvgMove}>
-            <defs>
-              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={metricColors[metric]} stopOpacity="0.2"/>
-                <stop offset="100%" stopColor={metricColors[metric]} stopOpacity="0"/>
-              </linearGradient>
-            </defs>
-            <path d={areaD} fill="url(#areaGrad)" />
-            <path d={pathD} fill="none" stroke={metricColors[metric]} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            {tooltip && (
-              <>
-                <line x1={pts[tooltip.idx].x} y1={PAD} x2={pts[tooltip.idx].x} y2={H-PAD} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="4,3"/>
-                <circle cx={pts[tooltip.idx].x} cy={pts[tooltip.idx].y} r="5" fill={metricColors[metric]} stroke="#fff" strokeWidth="2"/>
-              </>
-            )}
-          </svg>
-
-          {/* Tooltip */}
-          {tooltip && (
-            <div style={{ position:"absolute", top:`${tooltip.y}%`, left:`${Math.min(tooltip.x, 75)}%`, transform:"translate(10px,-50%)", background:C.bgCard, border:`1px solid ${metricColors[metric]}44`, borderRadius:"10px", padding:"8px 12px", fontSize:"12px", pointerEvents:"none", zIndex:10, whiteSpace:"nowrap", boxShadow:`0 0 0 1px ${metricColors[metric]}22` }}>
-              <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"3px" }}>{months[tooltip.idx]}</div>
-              <div style={{ fontWeight:700, color:metricColors[metric] }}>{tooltip.value.toLocaleString("fr-FR")}{metric==="mrr"?"€":""}</div>
-            </div>
-          )}
-
-          {/* X labels */}
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:"6px" }}>
-            {months.map((m,i) => <span key={i} style={{ fontSize:"10px", color:C.textDim }}>{m}</span>)}
-          </div>
-        </div>
-      </div>
-
-      {/* REVENUE TOTAL + MONTHLY BARS */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem", marginBottom:"1.5rem" }}>
+        {/* Inscriptions 7 derniers jours */}
         <div className="card">
-          <div style={{ fontSize:"11px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"8px" }}>Revenus totaux depuis Jan 2025</div>
-          <div style={{ fontSize:"2rem", fontWeight:900, letterSpacing:"-1px", color:C.accent, marginBottom:"4px" }}>148 920€</div>
-          <div style={{ fontSize:"12px", color:C.textMuted }}>Net Stripe · TVA incluse</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"8px", marginTop:"1rem" }}>
-            {[["Pro","74 160€",C.accent2],["Creator","52 200€",C.accent],["Business","22 560€",C.pink]].map(([l,v,col],i)=>(
-              <div key={i} style={{ background:C.bgCard2, borderRadius:"8px", padding:"8px" }}>
-                <div style={{ fontSize:"10px", color:C.textMuted, marginBottom:"3px" }}>{l}</div>
-                <div style={{ fontSize:"13px", fontWeight:700, color:col }}>{v}</div>
+          <div style={{ fontSize:"13px", fontWeight:600, marginBottom:"1rem" }}>Inscriptions — 7 derniers jours</div>
+          <div style={{ display:"flex", gap:"6px", alignItems:"flex-end", height:"80px", marginBottom:"8px" }}>
+            {last7.map((v,i) => (
+              <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"4px" }}>
+                <div style={{ width:"100%", height:`${(v/maxBar)*70}px`, background:v>0?C.grad:`${C.accent}22`, borderRadius:"4px 4px 0 0", minHeight:v>0?"4px":"2px", transition:"height 0.3s" }} />
+                <span style={{ fontSize:"9px", color:C.textDim }}>{days7[i]}</span>
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="card">
-          <div style={{ fontSize:"11px", color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"12px" }}>Revenus mensuels · Cliquer pour détail</div>
-          <div style={{ display:"flex", gap:"6px", alignItems:"flex-end", height:"80px" }}>
-            {monthlyRevenue.map((r,i) => {
-              const total = r.pro+r.creator+r.biz+r.credits;
-              const h = (total/maxRev)*70;
-              const isSelected = selectedMonth === i;
-              return (
-                <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"4px", cursor:"pointer" }} onClick={()=>setSelectedMonth(isSelected ? null : i)}>
-                  <div style={{ width:"100%", height:`${h}px`, background: isSelected ? C.success : C.grad, borderRadius:"4px 4px 0 0", transition:"all 0.2s" }} />
-                  <span style={{ fontSize:"9px", color: isSelected ? C.success : C.textDim }}>{r.m}</span>
-                </div>
-              );
-            })}
+          <div style={{ display:"flex", justifyContent:"space-between", borderTop:`1px solid ${C.border}`, paddingTop:"10px" }}>
+            <div>
+              <div style={{ fontSize:"11px", color:C.textMuted }}>Cette semaine</div>
+              <div style={{ fontWeight:700, color:C.accent }}>{last7.reduce((a,b)=>a+b,0)} inscrits</div>
+            </div>
+            <div>
+              <div style={{ fontSize:"11px", color:C.textMuted }}>Total</div>
+              <div style={{ fontWeight:700 }}>{totalUsers} inscrits</div>
+            </div>
           </div>
-          {selM && (
-            <div style={{ marginTop:"12px", padding:"10px", background:C.bgCard2, borderRadius:"8px", fontSize:"12px" }}>
-              <div style={{ fontWeight:700, marginBottom:"6px", color:C.success }}>Détail {monthlyRevenue[selectedMonth].m}</div>
-              {[["Pro",selM.pro,C.accent2],["Creator",selM.creator,C.accent],["Business",selM.biz,C.pink],["Crédits",selM.credits,C.warning]].map(([l,v,col],i)=>(
-                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"4px" }}>
-                  <span style={{ color:C.textMuted }}>{l}</span>
-                  <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                    <div style={{ width:"60px", height:"4px", background:C.border, borderRadius:"2px", overflow:"hidden" }}>
-                      <div style={{ width:`${(v/(selM.pro+selM.creator+selM.biz+selM.credits))*100}%`, height:"100%", background:col, borderRadius:"2px" }} />
-                    </div>
-                    <span style={{ fontWeight:600, color:col }}>{v}€</span>
-                  </div>
+        </div>
+
+        {/* Répartition plans */}
+        <div className="card">
+          <div style={{ fontSize:"13px", fontWeight:600, marginBottom:"1rem" }}>Répartition par plan</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+            {["Free","Pro","Creator","Business"].map(plan => (
+              <div key={plan}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"4px" }}>
+                  <span style={{ fontSize:"12px", fontWeight:600, color:planColors[plan] }}>{plan}</span>
+                  <span style={{ fontSize:"12px", color:C.textMuted }}>{planCount[plan]||0} users · {planPercent(plan)}%</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* PLAN BREAKDOWN */}
-      <div className="card">
-        <div style={{ fontSize:"13px", fontWeight:600, marginBottom:"1rem" }}>Répartition par plan</div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"1rem" }}>
-          {[["Free","892","46.4%",C.textMuted],["Pro","631","32.8%",C.accent2],["Creator","284","14.7%",C.accent],["Business","117","6.1%",C.pink]].map(([plan,n,pct,col],i)=>(
-            <div key={i}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
-                <span style={{ fontSize:"12px", fontWeight:600, color:col }}>{plan}</span>
-                <span style={{ fontSize:"12px", color:C.textMuted }}>{n} users</span>
+                <div style={{ height:"5px", background:C.border, borderRadius:"999px", overflow:"hidden" }}>
+                  <div style={{ width:`${planPercent(plan)}%`, height:"100%", background:planColors[plan], borderRadius:"999px", transition:"width 0.5s" }} />
+                </div>
               </div>
-              <div style={{ height:"5px", background:C.border, borderRadius:"999px", overflow:"hidden" }}>
-                <div style={{ width:pct, height:"100%", background:col, borderRadius:"999px" }} />
-              </div>
-              <div style={{ fontSize:"11px", color:C.textDim, marginTop:"3px", textAlign:"right" }}>{pct}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Users ──
-function AdminUsers() {
-  const [search, setSearch] = useState("");
-  const [filterPlan, setFilterPlan] = useState("Tous");
-  const [editUser, setEditUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState([]);
-  const planColors = { Free:C.textMuted, Pro:C.accent2, Creator:C.accent, Business:C.pink };
-
-  useEffect(() => {
-    fetch('/api/admin/users')
-      .then(r => r.json())
-      .then(({ profiles }) => {
-        if (profiles) {
-          setUsers(profiles.map(p => ({
-            id: p.id,
-            name: p.name || "—",
-            email: p.email || "—",
-            plan: p.plan || "Free",
-            credits: p.credits || 0,
-            videos: 0,
-            revenue: "0€",
-            status: "actif",
-            joined: new Date(p.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" }),
-          })));
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  const filtered = users.filter(u =>
-    (filterPlan === "Tous" || u.plan === filterPlan) &&
-    (u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()))
-  );
-
-  const saveEdit = () => {
-    setUsers(prev => prev.map(u => u.id === editUser.id ? editUser : u));
-    setEditUser(null);
-  };
-
-  return (
-    <div>
-      <div style={{ display:"flex", gap:"10px", marginBottom:"1rem", alignItems:"center" }}>
-        <input className="input" placeholder="🔍 Rechercher par nom ou email…" value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1 }} />
-        <select value={filterPlan} onChange={e=>setFilterPlan(e.target.value)} style={{ width:"140px" }}>
-          {["Tous","Free","Pro","Creator","Business"].map(p=><option key={p}>{p}</option>)}
-        </select>
-        <div style={{ fontSize:"13px", color:C.textMuted, whiteSpace:"nowrap" }}>
-          <strong style={{ color:C.success }}>{users.length}</strong> utilisateurs réels
+            ))}
+          </div>
+          <div style={{ marginTop:"1rem", padding:"10px", background:C.bgCard2, borderRadius:"8px", fontSize:"12px" }}>
+            <div style={{ color:C.textMuted, marginBottom:"4px" }}>MRR calculé</div>
+            <div style={{ fontWeight:700, color:C.success, fontSize:"1.1rem" }}>{mrr}€/mois</div>
+            <div style={{ fontSize:"11px", color:C.textDim }}>Pro×{planCount.Pro||0} + Creator×{planCount.Creator||0} + Business×{planCount.Business||0}</div>
+          </div>
         </div>
       </div>
 
-      {loading ? (
-        <div className="card" style={{ textAlign:"center", padding:"3rem", color:C.textMuted }}>
-          <div style={{ fontSize:"24px", marginBottom:"8px", animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</div>
-          <div>Chargement des utilisateurs...</div>
+      {/* Derniers inscrits */}
+      <div className="card" style={{ padding:0, overflow:"hidden" }}>
+        <div style={{ padding:"14px 16px", borderBottom:`1px solid ${C.border}`, fontSize:"13px", fontWeight:600 }}>
+          Derniers inscrits
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="card" style={{ textAlign:"center", padding:"3rem", color:C.textMuted }}>
-          Aucun utilisateur trouvé
-        </div>
-      ) : (
-        <div className="card" style={{ padding:0, overflow:"hidden" }}>
         <table>
           <thead><tr style={{ borderBottom:`1px solid ${C.border}` }}>
-            {["Utilisateur","Plan","Crédits","Vidéos","Revenus","Statut","Inscrit",""].map((h,i)=>(
-              <th key={i} style={{ padding:"10px 14px", textAlign:i===0?"left":"center", fontSize:"11px", color:C.textMuted, fontWeight:500, textTransform:"uppercase", letterSpacing:"0.4px" }}>{h}</th>
+            {["Nom","Email","Plan","Crédits","Date inscription"].map((h,i)=>(
+              <th key={i} style={{ padding:"10px 16px", textAlign:i===0?"left":"center", fontSize:"11px", color:C.textMuted, fontWeight:500, textTransform:"uppercase" }}>{h}</th>
             ))}
           </tr></thead>
           <tbody>
-            {filtered.map((u,i)=>(
-              <tr key={u.id} style={{ borderBottom: i<filtered.length-1 ? `1px solid ${C.border}` : "none" }}>
-                <td style={{ padding:"12px 14px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                    <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:`${planColors[u.plan]}22`, border:`1px solid ${planColors[u.plan]}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", fontWeight:700, color:planColors[u.plan], flexShrink:0 }}>{u.name[0]}</div>
-                    <div>
-                      <div style={{ fontSize:"13px", fontWeight:600 }}>{u.name}</div>
-                      <div style={{ fontSize:"11px", color:C.textMuted }}>{u.email}</div>
-                    </div>
-                  </div>
+            {profiles.slice(0,10).map((p,i)=>(
+              <tr key={p.id} style={{ borderBottom: i<Math.min(profiles.length,10)-1?`1px solid ${C.border}`:"none" }}>
+                <td style={{ padding:"12px 16px", fontWeight:500, fontSize:"13px" }}>{p.name||"—"}</td>
+                <td style={{ padding:"12px 16px", textAlign:"center", fontSize:"12px", color:C.textMuted }}>{p.email||"—"}</td>
+                <td style={{ padding:"12px 16px", textAlign:"center" }}>
+                  <span className="badge" style={{ background:`${planColors[p.plan||"Free"]}15`, color:planColors[p.plan||"Free"] }}>{p.plan||"Free"}</span>
                 </td>
-                <td style={{ padding:"12px 14px", textAlign:"center" }}><span className="badge" style={{ background:`${planColors[u.plan]}15`, color:planColors[u.plan] }}>{u.plan}</span></td>
-                <td style={{ padding:"12px 14px", textAlign:"center", fontWeight:600, fontSize:"13px", color: u.credits < 50 ? C.warning : C.text }}>{u.credits.toLocaleString("fr-FR")}</td>
-                <td style={{ padding:"12px 14px", textAlign:"center", fontSize:"13px", color:C.textMuted }}>{u.videos}</td>
-                <td style={{ padding:"12px 14px", textAlign:"center", fontWeight:600, fontSize:"13px" }}>{u.revenue}</td>
-                <td style={{ padding:"12px 14px", textAlign:"center" }}><span className="badge" style={{ background: u.status==="actif" ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", color: u.status==="actif" ? C.success : C.danger }}>{u.status}</span></td>
-                <td style={{ padding:"12px 14px", textAlign:"center", fontSize:"11px", color:C.textMuted }}>{u.joined}</td>
-                <td style={{ padding:"12px 14px", textAlign:"center" }}><button className="btn-secondary" style={{ padding:"4px 12px", fontSize:"11px" }} onClick={()=>setEditUser({...u})}>Modifier</button></td>
+                <td style={{ padding:"12px 16px", textAlign:"center", fontWeight:600, color:C.accent }}>{p.credits||0}</td>
+                <td style={{ padding:"12px 16px", textAlign:"center", fontSize:"11px", color:C.textDim }}>
+                  {new Date(p.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-        </div>
-      )}
-
-      {/* EDIT MODAL */}
-      {editUser && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:600, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(4px)" }} onClick={()=>setEditUser(null)}>
-          <div className="card scale-in" style={{ width:"420px", position:"relative" }} onClick={e=>e.stopPropagation()}>
-            <button className="btn-ghost" style={{ position:"absolute", top:"12px", right:"12px", fontSize:"18px" }} onClick={()=>setEditUser(null)}>×</button>
-            <div style={{ fontWeight:700, fontSize:"15px", marginBottom:"1rem" }}>Modifier — {editUser.name}</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-              <div>
-                <label style={{ fontSize:"12px", color:C.textMuted, marginBottom:"5px", display:"block" }}>Plan</label>
-                <select value={editUser.plan} onChange={e=>setEditUser({...editUser, plan:e.target.value})} style={{ width:"100%" }}>
-                  {["Free","Pro","Creator","Business"].map(p=><option key={p}>{p}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize:"12px", color:C.textMuted, marginBottom:"5px", display:"block" }}>Crédits</label>
-                <input className="input" type="number" value={editUser.credits} onChange={e=>setEditUser({...editUser, credits:+e.target.value})} />
-                <div style={{ display:"flex", gap:"6px", marginTop:"6px" }}>
-                  {[50,100,500,1000].map(n=>(
-                    <button key={n} className="btn-secondary" style={{ flex:1, padding:"5px", fontSize:"11px" }} onClick={()=>setEditUser({...editUser, credits:editUser.credits+n})}>+{n}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label style={{ fontSize:"12px", color:C.textMuted, marginBottom:"5px", display:"block" }}>Statut</label>
-                <select value={editUser.status} onChange={e=>setEditUser({...editUser, status:e.target.value})} style={{ width:"100%" }}>
-                  <option>actif</option><option>suspendu</option>
-                </select>
-              </div>
-              <div style={{ display:"flex", gap:"8px", marginTop:"4px" }}>
-                <button className="btn-primary" style={{ flex:2 }} onClick={saveEdit}>Sauvegarder</button>
-                <button className="btn-secondary" style={{ flex:1, color:C.danger, borderColor:"rgba(248,113,113,0.3)", fontSize:"13px" }} onClick={()=>{ setUsers(prev=>prev.filter(u=>u.id!==editUser.id)); setEditUser(null); }}>Supprimer</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
