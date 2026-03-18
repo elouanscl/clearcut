@@ -237,7 +237,7 @@ function Nav({ page, setPage, user, setUser, lang, setLang }) {
   return (
     <nav style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 2rem", height:"64px", background:C.bgNav, backdropFilter:"blur(16px)", borderBottom:`1px solid ${C.border}`, position:"sticky", top:0, zIndex:100 }}>
       <div onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:"8px", cursor:"pointer" }}>
-        <div style={{ width:"28px", height:"28px", borderRadius:"8px", background:C.grad, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:800, color:"#fff" }}>C</div>
+        <img src="/logo.png" alt="ClearCut" style={{ width:"32px", height:"32px", borderRadius:"8px", objectFit:"cover" }} />
         <span style={{ fontWeight:800, fontSize:"17px", letterSpacing:"-0.5px" }}>ClearCut</span>
       </div>
 
@@ -666,7 +666,7 @@ function LandingPage({ setPage }) {
       {/* FOOTER */}
       <footer style={{ borderTop:`1px solid ${C.border}`, padding:"2rem", display:"flex", justifyContent:"space-between", alignItems:"center", maxWidth:"1100px", margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-          <div style={{ width:"22px", height:"22px", borderRadius:"6px", background:C.grad, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"10px", color:"#fff", fontWeight:800 }}>C</div>
+          <img src="/logo.png" alt="ClearCut" style={{ width:"24px", height:"24px", borderRadius:"6px", objectFit:"cover" }} />
           <span style={{ fontWeight:700, fontSize:"14px" }}>ClearCut</span>
         </div>
         <div style={{ fontSize:"12px", color:C.textDim, textAlign:"center" }}>
