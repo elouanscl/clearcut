@@ -2808,13 +2808,11 @@ export default function App() {
           });
         }
       });
-    }, 500);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
-          setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, maxCredits: 20, id: session.user.id });
-          setPage("dashboard");
-        });
+    }, 300);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setPage("home");
       }
     });
     return () => subscription.unsubscribe();
