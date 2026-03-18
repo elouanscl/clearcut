@@ -567,17 +567,99 @@ function LandingPage({ setPage }) {
         </div>
       </section>
 
+      {/* TESTIMONIALS */}
+      <section style={{ padding:"4rem 2rem 2rem", maxWidth:"1100px", margin:"0 auto" }}>
+        <div style={{ textAlign:"center", marginBottom:"3rem" }}>
+          <div className="badge" style={{ background:"rgba(52,211,153,0.1)", color:C.success, border:`1px solid rgba(52,211,153,0.2)`, marginBottom:"1rem" }}>Témoignages</div>
+          <h2 style={{ fontSize:"2.5rem", fontWeight:900, letterSpacing:"-1.5px" }}>Ils nous font confiance</h2>
+          <p style={{ color:C.textMuted, marginTop:"10px" }}>Plus de 10 000 créateurs utilisent ClearCut chaque mois</p>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"1.5rem" }}>
+          {[
+            { name:"Sophie M.", role:"Créatrice TikTok · 480K abonnés", avatar:"SM", color:C.accent, stars:5, text:"ClearCut m'a changé la vie. Je reposte mes TikToks sur YouTube Shorts sans effort. En 30 secondes, ma vidéo est propre. J'ai doublé ma vitesse de publication." },
+            { name:"Lucas B.", role:"YouTubeur · 1.2M abonnés", avatar:"LB", color:C.pink, stars:5, text:"J'utilisais After Effects avant — 15 minutes par vidéo. Maintenant c'est 45 secondes avec ClearCut. Pour mon agence qui traite 200 vidéos/mois, c'est indispensable." },
+            { name:"Camille D.", role:"Community Manager", avatar:"CD", color:C.cyan, stars:5, text:"Notre client veut du contenu multiplateforme chaque semaine. ClearCut s'occupe des sous-titres en batch. Le résultat est parfait, même sur les fonds complexes." },
+          ].map((t,i) => (
+            <div key={i} className="card" style={{ position:"relative", transition:"transform 0.2s, border-color 0.2s" }}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.borderColor=t.color+"44";}}
+              onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.borderColor=C.border;}}>
+              <div style={{ display:"flex", gap:"4px", marginBottom:"1rem" }}>
+                {[...Array(t.stars)].map((_,j) => <span key={j} style={{ color:"#FBBF24", fontSize:"14px" }}>★</span>)}
+              </div>
+              <p style={{ fontSize:"14px", color:C.textMuted, lineHeight:1.8, marginBottom:"1.5rem", fontStyle:"italic" }}>"{t.text}"</p>
+              <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+                <div style={{ width:"40px", height:"40px", borderRadius:"50%", background:`${t.color}22`, border:`2px solid ${t.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:800, color:t.color, flexShrink:0 }}>{t.avatar}</div>
+                <div>
+                  <div style={{ fontSize:"13px", fontWeight:700 }}>{t.name}</div>
+                  <div style={{ fontSize:"11px", color:C.textMuted }}>{t.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section style={{ padding:"4rem 2rem", maxWidth:"800px", margin:"0 auto" }}>
+        <div style={{ textAlign:"center", marginBottom:"3rem" }}>
+          <div className="badge" style={{ background:"rgba(124,111,255,0.1)", color:C.accent, border:`1px solid rgba(124,111,255,0.2)`, marginBottom:"1rem" }}>FAQ</div>
+          <h2 style={{ fontSize:"2.5rem", fontWeight:900, letterSpacing:"-1.5px" }}>Questions fréquentes</h2>
+        </div>
+        {[
+          ["C'est quoi un crédit ?", "1 crédit = 1 minute de vidéo traitée. Une vidéo de 2 minutes coûte 2 crédits. Le plan Free inclut 20 crédits offerts à l'inscription puis 10 crédits gratuits chaque mois."],
+          ["Mes vidéos sont-elles en sécurité ?", "Absolument. Tes vidéos sont chiffrées pendant le transfert et automatiquement supprimées de nos serveurs 24h après le traitement. Nous ne partageons jamais tes données."],
+          ["Quels formats sont acceptés ?", "MP4, MOV, MKV, AVI, WebM jusqu'à 2 Go par fichier. Résolutions supportées : 480p à 4K. Pour les fichiers plus lourds, contacte-nous."],
+          ["Puis-je annuler mon abonnement ?", "Oui, à tout moment depuis ton espace abonnement. L'annulation prend effet à la fin de la période en cours. Aucun frais caché."],
+          ["Ça marche sur les sous-titres animés TikTok ?", "Oui ! Notre modèle a été spécifiquement entraîné sur les styles populaires TikTok, Instagram Reels et YouTube Shorts. Taux de succès : 99.2%."],
+          ["Vous proposez une API ?", "Oui, à partir du plan Pro. Tu peux intégrer ClearCut directement dans ton workflow via notre API REST. Documentation disponible dans les paramètres."],
+        ].map(([q,a],i) => {
+          const [open, setOpen] = useState(false);
+          return (
+            <div key={i} className="card" style={{ marginBottom:"8px", cursor:"pointer", transition:"border-color 0.2s" }}
+              onClick={()=>setOpen(o=>!o)}
+              onMouseEnter={e=>e.currentTarget.style.borderColor=C.borderL}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span style={{ fontSize:"14px", fontWeight:600 }}>{q}</span>
+                <span style={{ color:C.accent, fontSize:"18px", fontWeight:300, transition:"transform 0.2s", transform: open?"rotate(45deg)":"none", flexShrink:0 }}>+</span>
+              </div>
+              {open && <p style={{ fontSize:"13px", color:C.textMuted, marginTop:"12px", lineHeight:1.8, borderTop:`1px solid ${C.border}`, paddingTop:"12px" }}>{a}</p>}
+            </div>
+          );
+        })}
+      </section>
+
       {/* CTA */}
-      <section style={{ padding:"4rem 2rem 6rem", textAlign:"center" }}>
-        <div style={{ maxWidth:"600px", margin:"0 auto" }}>
+      <section style={{ padding:"2rem 2rem 6rem" }}>
+        <div style={{ maxWidth:"800px", margin:"0 auto", background:`linear-gradient(135deg, rgba(124,111,255,0.15), rgba(79,142,255,0.1))`, border:`1px solid rgba(124,111,255,0.25)`, borderRadius:"24px", padding:"4rem", textAlign:"center", position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:"-50px", right:"-50px", width:"200px", height:"200px", borderRadius:"50%", background:"radial-gradient(circle, rgba(124,111,255,0.2) 0%, transparent 70%)", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", bottom:"-30px", left:"-30px", width:"150px", height:"150px", borderRadius:"50%", background:"radial-gradient(circle, rgba(79,142,255,0.15) 0%, transparent 70%)", pointerEvents:"none" }} />
+          <div className="badge" style={{ background:"rgba(52,211,153,0.1)", color:C.success, border:`1px solid rgba(52,211,153,0.2)`, marginBottom:"1.5rem" }}>
+            <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:C.success, display:"inline-block", marginRight:"6px", animation:"pulse 2s infinite" }} />
+            +12 000 créateurs actifs
+          </div>
           <h2 style={{ fontSize:"2.8rem", fontWeight:900, letterSpacing:"-1.5px", marginBottom:"1rem" }}>
             Prêt à nettoyer<br/>
             <span style={{ background:C.gradText, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>tes vidéos ?</span>
           </h2>
-          <p style={{ color:C.textMuted, marginBottom:"2rem", lineHeight:1.8 }}>20 crédits gratuits, aucune carte bancaire requise.</p>
-          <button className="btn-primary" style={{ padding:"15px 32px", fontSize:"16px" }} onClick={() => setPage("signup")}>
-            ✦ Commencer gratuitement →
-          </button>
+          <p style={{ color:C.textMuted, marginBottom:"2rem", lineHeight:1.8, fontSize:"15px" }}>
+            20 crédits gratuits offerts · Aucune carte bancaire requise · Résultat en 60 secondes
+          </p>
+          <div style={{ display:"flex", gap:"12px", justifyContent:"center", flexWrap:"wrap" }}>
+            <button className="btn-primary" style={{ padding:"15px 32px", fontSize:"16px" }} onClick={() => setPage("signup")}>
+              ✦ Commencer gratuitement →
+            </button>
+            <button className="btn-secondary" style={{ padding:"15px 32px", fontSize:"16px" }} onClick={() => setPage("pricing")}>
+              Voir les tarifs
+            </button>
+          </div>
+          <div style={{ display:"flex", justifyContent:"center", gap:"24px", marginTop:"2rem" }}>
+            {[["🔒","100% sécurisé"],["⚡","Résultat en 60s"],["🎯","99.2% de précision"],["✦","Sans CB"]].map(([icon,label],i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:"6px", fontSize:"12px", color:C.textMuted }}>
+                <span>{icon}</span>{label}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -2670,6 +2752,43 @@ function BatchPage({ setPage, user, setUser }) {
   );
 }
 
+// ─── BETA BANNER ──────────────────────────────────────────────────────────────
+function BetaBanner({ setPage }) {
+  const [show, setShow] = useState(true);
+  if (!show) return null;
+  return (
+    <div style={{ background:`linear-gradient(90deg, rgba(124,111,255,0.9), rgba(79,142,255,0.9))`, padding:"10px 2rem", display:"flex", alignItems:"center", justifyContent:"center", gap:"16px", position:"relative", zIndex:99 }}>
+      <span style={{ fontSize:"12px", fontWeight:600, color:"#fff" }}>
+        🚀 Bêta ouverte — 20 crédits gratuits offerts à l'inscription !
+      </span>
+      <button className="btn-primary" style={{ padding:"5px 14px", fontSize:"11px", background:"rgba(255,255,255,0.2)", boxShadow:"none", border:"1px solid rgba(255,255,255,0.3)" }} onClick={()=>setPage("signup")}>
+        Essayer gratuit →
+      </button>
+      <button onClick={()=>setShow(false)} style={{ position:"absolute", right:"1rem", background:"none", border:"none", color:"rgba(255,255,255,0.7)", cursor:"pointer", fontSize:"16px" }}>×</button>
+    </div>
+  );
+}
+
+// ─── NOT FOUND PAGE ───────────────────────────────────────────────────────────
+function NotFoundPage({ setPage }) {
+  return (
+    <div style={{ minHeight:"calc(100vh - 64px)", display:"flex", alignItems:"center", justifyContent:"center", padding:"2rem", textAlign:"center" }}>
+      <div className="fade-in">
+        <div style={{ fontSize:"80px", marginBottom:"1rem", animation:"float 3s ease-in-out infinite" }}>🎬</div>
+        <div style={{ fontSize:"6rem", fontWeight:900, letterSpacing:"-4px", background:C.gradText, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", lineHeight:1, marginBottom:"1rem" }}>404</div>
+        <h1 style={{ fontSize:"1.8rem", fontWeight:800, letterSpacing:"-1px", marginBottom:"10px" }}>Page introuvable</h1>
+        <p style={{ color:C.textMuted, fontSize:"15px", marginBottom:"2rem", lineHeight:1.8 }}>
+          Cette page n'existe pas ou a été déplacée.<br/>Retourne à l'accueil pour continuer.
+        </p>
+        <div style={{ display:"flex", gap:"12px", justifyContent:"center" }}>
+          <button className="btn-primary" style={{ padding:"12px 28px", fontSize:"14px" }} onClick={()=>setPage("home")}>← Retour à l'accueil</button>
+          <button className="btn-secondary" style={{ padding:"12px 28px", fontSize:"14px" }} onClick={()=>setPage("signup")}>Commencer gratuit</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── APP ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState("home");
@@ -2725,6 +2844,7 @@ export default function App() {
       case "cgu":      return <CGUPage />;
       case "privacy":  return <PrivacyPage />;
       case "contact":  return <ContactPage />;
+      case "404":      return <NotFoundPage setPage={setPage} />;
       case "blog":     return <BlogPage setPage={setPage} />;
       case "features": return <FeaturesPage setPage={setPage} />;
       case "how":      return <HowItWorksPage setPage={setPage} />;
@@ -2740,6 +2860,7 @@ export default function App() {
       <ExitIntentPopup />
       {showOnboarding && <OnboardingModal onClose={()=>setShowOnboarding(false)} />}
       <Nav page={page} setPage={requireAuth} user={user} setUser={setUser} lang={lang} setLang={setLang} />
+      {!user && page === "home" && <BetaBanner setPage={setPage} />}
       {renderPage()}
       <AIChatWidget />
     </div>
