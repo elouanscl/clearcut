@@ -2752,6 +2752,85 @@ function BatchPage({ setPage, user, setUser }) {
   );
 }
 
+// ─── HOME LOGGED IN ───────────────────────────────────────────────────────────
+function HomeLoggedIn({ user, setPage }) {
+  const creditPct = Math.min(100, ((user?.credits||0) / (user?.maxCredits||20)) * 100);
+
+  return (
+    <div style={{ minHeight:"calc(100vh - 64px)", background:C.bg }}>
+      {/* HERO */}
+      <div style={{ padding:"4rem 2rem 2rem", maxWidth:"1100px", margin:"0 auto" }}>
+        <div style={{ marginBottom:"3rem" }}>
+          <h1 style={{ fontSize:"2.5rem", fontWeight:900, letterSpacing:"-1.5px", marginBottom:"8px" }}>
+            Bonjour, {user?.name?.split(" ")[0]} 👋
+          </h1>
+          <p style={{ color:C.textMuted, fontSize:"15px" }}>Que veux-tu faire aujourd'hui ?</p>
+        </div>
+
+        {/* QUICK ACTIONS */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1.5rem", marginBottom:"2rem" }}>
+          <div className="card" style={{ cursor:"pointer", border:`1px solid ${C.borderL}`, transition:"all 0.2s", background:`linear-gradient(135deg, rgba(124,111,255,0.1), rgba(79,142,255,0.05))` }}
+            onClick={()=>setPage("process")}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.transform="translateY(-3px)";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borderL;e.currentTarget.style.transform="translateY(0)";}}>
+            <div style={{ fontSize:"40px", marginBottom:"1rem" }}>⬆️</div>
+            <h2 style={{ fontSize:"1.2rem", fontWeight:800, marginBottom:"6px" }}>Uploader une vidéo</h2>
+            <p style={{ fontSize:"13px", color:C.textMuted, lineHeight:1.7 }}>Supprime les sous-titres d'une vidéo en 60 secondes</p>
+            <div style={{ marginTop:"1rem", display:"inline-flex", alignItems:"center", gap:"6px", color:C.accent, fontSize:"13px", fontWeight:600 }}>Commencer →</div>
+          </div>
+
+          <div className="card" style={{ cursor:"pointer", border:`1px solid ${C.borderL}`, transition:"all 0.2s", background:`linear-gradient(135deg, rgba(244,114,182,0.08), rgba(34,211,238,0.05))` }}
+            onClick={()=>setPage("batch")}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.pink;e.currentTarget.style.transform="translateY(-3px)";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.borderL;e.currentTarget.style.transform="translateY(0)";}}>
+            <div style={{ fontSize:"40px", marginBottom:"1rem" }}>📦</div>
+            <h2 style={{ fontSize:"1.2rem", fontWeight:800, marginBottom:"6px" }}>Traitement batch</h2>
+            <p style={{ fontSize:"13px", color:C.textMuted, lineHeight:1.7 }}>Traite jusqu'à 50 vidéos d'un coup et télécharge un ZIP</p>
+            <div style={{ marginTop:"1rem", display:"inline-flex", alignItems:"center", gap:"6px", color:C.pink, fontSize:"13px", fontWeight:600 }}>Commencer →</div>
+          </div>
+        </div>
+
+        {/* STATS + CREDITS */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:"1rem", marginBottom:"2rem" }}>
+          <div className="card" style={{ padding:"1rem" }}>
+            <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"6px", textTransform:"uppercase" }}>Crédits restants</div>
+            <div style={{ fontSize:"1.6rem", fontWeight:800, color:C.accent }}>{user?.credits||0}</div>
+            <div style={{ height:"4px", background:C.border, borderRadius:"999px", overflow:"hidden", marginTop:"8px" }}>
+              <div style={{ width:`${creditPct}%`, height:"100%", background: creditPct < 20 ? C.danger : C.grad, borderRadius:"999px" }} />
+            </div>
+          </div>
+          <div className="card" style={{ padding:"1rem" }}>
+            <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"6px", textTransform:"uppercase" }}>Plan actuel</div>
+            <div style={{ fontSize:"1.2rem", fontWeight:800, color:C.cyan }}>{user?.plan||"Free"}</div>
+            <button className="btn-ghost" style={{ fontSize:"11px", color:C.accent, padding:0, marginTop:"4px" }} onClick={()=>setPage("pricing")}>Upgrader →</button>
+          </div>
+          <div className="card" style={{ padding:"1rem", cursor:"pointer" }} onClick={()=>setPage("dashboard")}>
+            <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"6px", textTransform:"uppercase" }}>Dashboard</div>
+            <div style={{ fontSize:"1.2rem", fontWeight:800 }}>📊</div>
+            <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"4px" }}>Stats & historique</div>
+          </div>
+          <div className="card" style={{ padding:"1rem", cursor:"pointer" }} onClick={()=>setPage("settings")}>
+            <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"6px", textTransform:"uppercase" }}>Paramètres</div>
+            <div style={{ fontSize:"1.2rem", fontWeight:800 }}>⚙️</div>
+            <div style={{ fontSize:"11px", color:C.textMuted, marginTop:"4px" }}>Compte & API</div>
+          </div>
+        </div>
+
+        {/* UPGRADE BANNER if free */}
+        {user?.plan === "Free" && (
+          <div style={{ padding:"1.5rem 2rem", background:`linear-gradient(135deg, rgba(124,111,255,0.12), rgba(79,142,255,0.08))`, border:`1px solid rgba(124,111,255,0.25)`, borderRadius:"16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div>
+              <div style={{ fontWeight:700, marginBottom:"4px" }}>🚀 Passe au plan Pro</div>
+              <div style={{ fontSize:"13px", color:C.textMuted }}>500 crédits/mois · 1080p · Support prioritaire — à partir de 19€/mois</div>
+            </div>
+            <button className="btn-primary" style={{ padding:"10px 24px", whiteSpace:"nowrap" }} onClick={()=>setPage("pricing")}>Voir les plans →</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── BETA BANNER ──────────────────────────────────────────────────────────────
 function BetaBanner({ setPage }) {
   const [show, setShow] = useState(true);
@@ -2804,7 +2883,7 @@ export default function App() {
         if (session?.user) {
           supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
             setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, maxCredits: 20, id: session.user.id });
-            setPage("dashboard");
+            // Ne redirige pas — l'utilisateur reste sur la landing page
           });
         }
       });
@@ -2826,7 +2905,7 @@ export default function App() {
 
   const renderPage = () => {
     switch (page) {
-      case "home":     return <LandingPage setPage={requireAuth} lang={lang} />;
+      case "home":     return user ? <HomeLoggedIn user={user} setPage={setPage} /> : <LandingPage setPage={requireAuth} lang={lang} />;
       case "pricing":  return <PricingPage setPage={requireAuth} setCheckoutPlan={setCheckoutPlan} lang={lang} />;
       case "login":    return <AuthPage type="login" setPage={setPage} setUser={setUser} showOnboarding={()=>setShowOnboarding(true)} />;
       case "signup":   return <AuthPage type="signup" setPage={setPage} setUser={setUser} showOnboarding={()=>setShowOnboarding(true)} />;
