@@ -230,7 +230,7 @@ const TRANSLATIONS = {
 // ─── NAV ─────────────────────────────────────────────────────────────────────
 function Nav({ page, setPage, user, setUser, lang, setLang }) {
   const [profileOpen, setProfileOpen] = useState(false);
-  const logout = () => { setUser(null); setPage("home"); setProfileOpen(false); };
+  const logout = async () => { await supabase.auth.signOut(); setUser(null); setPage("home"); setProfileOpen(false); };
   const T = TRANSLATIONS[lang];
   const creditPct = Math.min(100, (user?.credits / (user?.maxCredits || 20)) * 100);
 
