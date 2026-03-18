@@ -3,8 +3,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from '../lib/supabase';
 
 // ─── ADMIN CREDENTIALS ───────────────────────────────────────────────────────
-const ADMIN_EMAIL = "admin@clearcut.io";
-const ADMIN_PASSWORD = "clearcut-admin-2026";
+const ADMIN_EMAIL = "elouan.lvv@gmail.com";
+const ADMIN_PASSWORD = "";
 
 // ─── DESIGN SYSTEM ───────────────────────────────────────────────────────────
 const C = {
@@ -690,18 +690,11 @@ function AuthPage({ type, setPage, setUser, showOnboarding }) {
 
   const handle = async () => {
     setLoading(true);
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const adminUser = { name:"Admin", email, plan:"Business", credits:9999, isAdmin:true };
-      setUser(adminUser);
-      setTimeout(() => { setPage("admin"); setLoading(false); }, 50);
-      return;
-    }
     if (type === "signup") {
       const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
       if (error) { alert(error.message); setLoading(false); return; }
       const u = { name: name || email.split("@")[0], email, plan:"Free", credits:20, id: data.user?.id };
       setUser(u);
-      // Notify admin of new signup
       fetch('/api/notify-signup', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: u.name, email }) }).catch(()=>{});
       showOnboarding();
       setPage("dashboard");
@@ -709,8 +702,9 @@ function AuthPage({ type, setPage, setUser, showOnboarding }) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { alert(error.message); setLoading(false); return; }
       const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-      setUser({ name: profile?.name || email.split("@")[0], email, plan: profile?.plan || "Free", credits: profile?.credits || 20, id: data.user.id });
-      setPage("dashboard");
+      const isAdmin = data.user.email === ADMIN_EMAIL;
+      setUser({ name: profile?.name || email.split("@")[0], email, plan: profile?.plan || "Free", credits: profile?.credits || 20, id: data.user.id, isAdmin });
+      setPage(isAdmin ? "admin" : "dashboard");
     }
     setLoading(false);
   };
@@ -2882,7 +2876,7 @@ export default function App() {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data: profile }) => {
-            setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, maxCredits: 20, id: session.user.id });
+            setUser({ name: profile?.name || session.user.email.split("@")[0], email: session.user.email, plan: profile?.plan || "Free", credits: profile?.credits || 20, maxCredits: 20, id: session.user.id, isAdmin: session.user.email === ADMIN_EMAIL });
             // Ne redirige pas — l'utilisateur reste sur la landing page
           });
         }
