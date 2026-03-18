@@ -237,7 +237,9 @@ function Nav({ page, setPage, user, setUser, lang, setLang }) {
   return (
     <nav style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 2rem", height:"64px", background:C.bgNav, backdropFilter:"blur(16px)", borderBottom:`1px solid ${C.border}`, position:"sticky", top:0, zIndex:100 }}>
       <div onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:"8px", cursor:"pointer" }}>
-        <img src="/logo.png" alt="ClearCut" style={{ width:"32px", height:"32px", borderRadius:"8px", objectFit:"cover" }} />
+        <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:C.grad, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+          <img src="/logo.png" alt="ClearCut" style={{ width:"26px", height:"26px", objectFit:"contain" }} />
+        </div>
         <span style={{ fontWeight:800, fontSize:"17px", letterSpacing:"-0.5px" }}>ClearCut</span>
       </div>
 
@@ -666,7 +668,9 @@ function LandingPage({ setPage }) {
       {/* FOOTER */}
       <footer style={{ borderTop:`1px solid ${C.border}`, padding:"2rem", display:"flex", justifyContent:"space-between", alignItems:"center", maxWidth:"1100px", margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-          <img src="/logo.png" alt="ClearCut" style={{ width:"24px", height:"24px", borderRadius:"6px", objectFit:"cover" }} />
+          <div style={{ width:"24px", height:"24px", borderRadius:"6px", background:C.grad, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+            <img src="/logo.png" alt="ClearCut" style={{ width:"20px", height:"20px", objectFit:"contain" }} />
+          </div>
           <span style={{ fontWeight:700, fontSize:"14px" }}>ClearCut</span>
         </div>
         <div style={{ fontSize:"12px", color:C.textDim, textAlign:"center" }}>
