@@ -238,7 +238,7 @@ function Nav({ page, setPage, user, setUser, lang, setLang }) {
     <nav style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 2rem", height:"64px", background:C.bgNav, backdropFilter:"blur(16px)", borderBottom:`1px solid ${C.border}`, position:"sticky", top:0, zIndex:100 }}>
       <div onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:"8px", cursor:"pointer" }}>
         <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:C.grad, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-          <img src="/logo.png" alt="ClearCut" style={{ width:"26px", height:"26px", objectFit:"contain" }} />
+          <img src="/logo2.png" alt="ClearCut" style={{ width:"26px", height:"26px", objectFit:"contain" }} />
         </div>
         <span style={{ fontWeight:800, fontSize:"17px", letterSpacing:"-0.5px" }}>ClearCut</span>
       </div>
