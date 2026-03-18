@@ -1595,20 +1595,162 @@ function AdminAnalytics() {
   );
 }
 
+// ── Users ──
+function AdminUsers() {
+  const [search, setSearch] = useState("");
+  const [filterPlan, setFilterPlan] = useState("Tous");
+  const [editUser, setEditUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const planColors = { Free:C.textMuted, Pro:C.accent2, Creator:C.accent, Business:C.pink };
+
+  useEffect(() => {
+    fetch('/api/admin/users')
+      .then(r => r.json())
+      .then(({ profiles }) => {
+        if (profiles) {
+          setUsers(profiles.map(p => ({
+            id: p.id,
+            name: p.name || "—",
+            email: p.email || "—",
+            plan: p.plan || "Free",
+            credits: p.credits || 0,
+            videos: 0,
+            revenue: p.plan === "Pro" ? "19€" : p.plan === "Creator" ? "49€" : p.plan === "Business" ? "99€" : "0€",
+            status: "actif",
+            joined: new Date(p.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" }),
+          })));
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const filtered = users.filter(u =>
+    (filterPlan === "Tous" || u.plan === filterPlan) &&
+    (u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const saveEdit = () => {
+    setUsers(prev => prev.map(u => u.id === editUser.id ? editUser : u));
+    setEditUser(null);
+  };
+
+  return (
+    <div>
+      <div style={{ display:"flex", gap:"10px", marginBottom:"1rem", alignItems:"center" }}>
+        <input className="input" placeholder="🔍 Rechercher par nom ou email…" value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1 }} />
+        <select value={filterPlan} onChange={e=>setFilterPlan(e.target.value)} style={{ width:"140px" }}>
+          {["Tous","Free","Pro","Creator","Business"].map(p=><option key={p}>{p}</option>)}
+        </select>
+        <div style={{ fontSize:"13px", color:C.textMuted, whiteSpace:"nowrap" }}>
+          <strong style={{ color:C.success }}>{users.length}</strong> utilisateurs réels
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="card" style={{ textAlign:"center", padding:"3rem", color:C.textMuted }}>
+          <div style={{ fontSize:"24px", marginBottom:"8px", animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</div>
+          <div>Chargement des utilisateurs...</div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card" style={{ textAlign:"center", padding:"3rem", color:C.textMuted }}>Aucun utilisateur trouvé</div>
+      ) : (
+        <div className="card" style={{ padding:0, overflow:"hidden" }}>
+          <table>
+            <thead><tr style={{ borderBottom:`1px solid ${C.border}` }}>
+              {["Utilisateur","Plan","Crédits","Revenus","Statut","Inscrit",""].map((h,i)=>(
+                <th key={i} style={{ padding:"10px 14px", textAlign:i===0?"left":"center", fontSize:"11px", color:C.textMuted, fontWeight:500, textTransform:"uppercase", letterSpacing:"0.4px" }}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {filtered.map((u,i)=>(
+                <tr key={u.id} style={{ borderBottom: i<filtered.length-1 ? `1px solid ${C.border}` : "none" }}>
+                  <td style={{ padding:"12px 14px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                      <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:`${planColors[u.plan]}22`, border:`1px solid ${planColors[u.plan]}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", fontWeight:700, color:planColors[u.plan], flexShrink:0 }}>{u.name[0]}</div>
+                      <div>
+                        <div style={{ fontSize:"13px", fontWeight:600 }}>{u.name}</div>
+                        <div style={{ fontSize:"11px", color:C.textMuted }}>{u.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ padding:"12px 14px", textAlign:"center" }}><span className="badge" style={{ background:`${planColors[u.plan]}15`, color:planColors[u.plan] }}>{u.plan}</span></td>
+                  <td style={{ padding:"12px 14px", textAlign:"center", fontWeight:600, fontSize:"13px", color: u.credits < 50 ? C.warning : C.text }}>{u.credits.toLocaleString("fr-FR")}</td>
+                  <td style={{ padding:"12px 14px", textAlign:"center", fontWeight:600, fontSize:"13px" }}>{u.revenue}</td>
+                  <td style={{ padding:"12px 14px", textAlign:"center" }}><span className="badge" style={{ background:"rgba(52,211,153,0.1)", color:C.success }}>{u.status}</span></td>
+                  <td style={{ padding:"12px 14px", textAlign:"center", fontSize:"11px", color:C.textMuted }}>{u.joined}</td>
+                  <td style={{ padding:"12px 14px", textAlign:"center" }}><button className="btn-secondary" style={{ padding:"4px 12px", fontSize:"11px" }} onClick={()=>setEditUser({...u})}>Modifier</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {editUser && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:600, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(4px)" }} onClick={()=>setEditUser(null)}>
+          <div className="card scale-in" style={{ width:"420px", position:"relative" }} onClick={e=>e.stopPropagation()}>
+            <button className="btn-ghost" style={{ position:"absolute", top:"12px", right:"12px", fontSize:"18px" }} onClick={()=>setEditUser(null)}>×</button>
+            <div style={{ fontWeight:700, fontSize:"15px", marginBottom:"1rem" }}>Modifier — {editUser.name}</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+              <div>
+                <label style={{ fontSize:"12px", color:C.textMuted, marginBottom:"5px", display:"block" }}>Plan</label>
+                <select value={editUser.plan} onChange={e=>setEditUser({...editUser, plan:e.target.value})} style={{ width:"100%" }}>
+                  {["Free","Pro","Creator","Business"].map(p=><option key={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize:"12px", color:C.textMuted, marginBottom:"5px", display:"block" }}>Crédits</label>
+                <input className="input" type="number" value={editUser.credits} onChange={e=>setEditUser({...editUser, credits:+e.target.value})} />
+                <div style={{ display:"flex", gap:"6px", marginTop:"6px" }}>
+                  {[50,100,500,1000].map(n=>(
+                    <button key={n} className="btn-secondary" style={{ flex:1, padding:"5px", fontSize:"11px" }} onClick={()=>setEditUser({...editUser, credits:editUser.credits+n})}>+{n}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:"8px", marginTop:"4px" }}>
+                <button className="btn-primary" style={{ flex:2 }} onClick={saveEdit}>Sauvegarder</button>
+                <button className="btn-secondary" style={{ flex:1, color:C.danger, borderColor:"rgba(248,113,113,0.3)", fontSize:"13px" }} onClick={()=>{ setUsers(prev=>prev.filter(u=>u.id!==editUser.id)); setEditUser(null); }}>Supprimer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Subscriptions ──
 function AdminSubscriptions() {
   const [filter, setFilter] = useState("Tous");
-  const [subs, setSubs] = useState([
-    { id:1, user:"Sophie Martin",   plan:"Creator", amount:"49€",  cycle:"mensuel", status:"actif",    renewal:"1 Avr 2026",  since:"12 Jan 2026" },
-    { id:2, user:"Théo Rousseau",   plan:"Pro",     amount:"19€",  cycle:"mensuel", status:"actif",    renewal:"28 Mar 2026", since:"28 Jan 2026" },
-    { id:3, user:"Lucas Bernard",   plan:"Business",amount:"99€",  cycle:"annuel",  status:"actif",    renewal:"3 Jan 2027",  since:"3 Jan 2026" },
-    { id:4, user:"Emma Leroy",      plan:"Pro",     amount:"19€",  cycle:"mensuel", status:"annulé",   renewal:"—",           since:"20 Déc 2025" },
-    { id:5, user:"Nathan Moreau",   plan:"Creator", amount:"470€", cycle:"annuel",  status:"actif",    renewal:"8 Fév 2027",  since:"8 Fév 2026" },
-    { id:6, user:"Marie Petit",     plan:"Pro",     amount:"190€", cycle:"annuel",  status:"actif",    renewal:"15 Mar 2027", since:"15 Mar 2025" },
-  ]);
-  const planColors = { Free:C.textMuted, Pro:C.accent2, Creator:C.accent, Business:C.pink };
+  const [loading, setLoading] = useState(true);
+  const [subs, setSubs] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/admin/users')
+      .then(r => r.json())
+      .then(({ profiles }) => {
+        const plans = { Pro:19, Creator:49, Business:99 };
+        const paid = (profiles||[]).filter(p => p.plan && plans[p.plan]);
+        setSubs(paid.map(p => ({
+          id: p.id,
+          user: p.name || p.email || "—",
+          plan: p.plan,
+          amount: `${plans[p.plan]}€`,
+          cycle: "mensuel",
+          status: "actif",
+          renewal: "—",
+          since: new Date(p.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" }),
+        })));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const planColors = { Pro:C.accent2, Creator:C.accent, Business:C.pink };
   const filtered = subs.filter(s => filter==="Tous" || (filter==="Actifs"&&s.status==="actif") || (filter==="Annulés"&&s.status==="annulé"));
-  const mrr = subs.filter(s=>s.status==="actif"&&s.cycle==="mensuel").reduce((a,s)=>a+parseInt(s.amount),0);
+  const mrr = subs.filter(s=>s.status==="actif").reduce((a,s)=>a+parseInt(s.amount),0);
 
   return (
     <div>
@@ -1621,10 +1763,21 @@ function AdminSubscriptions() {
         <div style={{ fontSize:"13px" }}>MRR actif : <strong style={{ color:C.success }}>{mrr}€</strong></div>
       </div>
 
+      {loading ? (
+        <div className="card" style={{ textAlign:"center", padding:"3rem", color:C.textMuted }}>
+          <div style={{ fontSize:"24px", animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card" style={{ textAlign:"center", padding:"3rem" }}>
+          <div style={{ fontSize:"32px", marginBottom:"10px" }}>💳</div>
+          <div style={{ fontWeight:600, marginBottom:"6px" }}>Aucun abonnement payant pour l'instant</div>
+          <div style={{ fontSize:"13px", color:C.textMuted }}>Les abonnements apparaîtront ici dès que Stripe sera branché</div>
+        </div>
+      ) : (
       <div className="card" style={{ padding:0, overflow:"hidden" }}>
         <table>
           <thead><tr style={{ borderBottom:`1px solid ${C.border}` }}>
-            {["Utilisateur","Plan","Montant","Cycle","Statut","Prochain renouvellement","Depuis",""].map((h,i)=>(
+            {["Utilisateur","Plan","Montant","Cycle","Statut","Depuis",""].map((h,i)=>(
               <th key={i} style={{ padding:"10px 14px", textAlign:i===0?"left":"center", fontSize:"11px", color:C.textMuted, fontWeight:500, textTransform:"uppercase" }}>{h}</th>
             ))}
           </tr></thead>
@@ -1636,7 +1789,6 @@ function AdminSubscriptions() {
                 <td style={{ padding:"12px 14px", textAlign:"center", fontWeight:700 }}>{s.amount}</td>
                 <td style={{ padding:"12px 14px", textAlign:"center", fontSize:"12px", color:C.textMuted }}>{s.cycle}</td>
                 <td style={{ padding:"12px 14px", textAlign:"center" }}><span className="badge" style={{ background: s.status==="actif"?"rgba(52,211,153,0.1)":"rgba(248,113,113,0.1)", color: s.status==="actif"?C.success:C.danger }}>{s.status}</span></td>
-                <td style={{ padding:"12px 14px", textAlign:"center", fontSize:"12px", color:C.textMuted }}>{s.renewal}</td>
                 <td style={{ padding:"12px 14px", textAlign:"center", fontSize:"11px", color:C.textDim }}>{s.since}</td>
                 <td style={{ padding:"12px 14px", textAlign:"center" }}>
                   <button className="btn-secondary" style={{ padding:"4px 10px", fontSize:"11px", color: s.status==="actif"?C.danger:C.success, borderColor: s.status==="actif"?"rgba(248,113,113,0.3)":"rgba(52,211,153,0.3)" }}
@@ -1649,6 +1801,7 @@ function AdminSubscriptions() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }
