@@ -1631,7 +1631,12 @@ function AdminUsers() {
     (u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
+    await fetch('/api/admin/update-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editUser.id, plan: editUser.plan, credits: editUser.credits })
+    });
     setUsers(prev => prev.map(u => u.id === editUser.id ? editUser : u));
     setEditUser(null);
   };
