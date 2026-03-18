@@ -706,16 +706,20 @@ function AuthPage({ type, setPage, setUser, showOnboarding }) {
 function Dashboard({ user, setPage, lang }) {
   const T = TRANSLATIONS[lang||"fr"];
   const maxCredits = user?.maxCredits || 20;
-  const creditPct = Math.min(100, ((user?.credits||0) / maxCredits) * 100);
+  const [jobs, setJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
 
-  const jobs = [
-    { name:"tiktok_vlog.mp4",      status:"done",       credits:2,  date:"17 Mar, 11:30", size:"38 MB",  dur:"0:42" },
-    { name:"reel_insta.mp4",        status:"done",       credits:2,  date:"17 Mar, 10:15", size:"22 MB",  dur:"0:31" },
-    { name:"youtube_ep03.mp4",      status:"done",       credits:8,  date:"16 Mar, 18:44", size:"480 MB", dur:"4:12" },
-    { name:"anime_op.mkv",          status:"processing", credits:4,  date:"En cours",       size:"220 MB", dur:"1:30" },
-    { name:"batch_5_videos.zip",    status:"done",       credits:14, date:"15 Mar, 09:05", size:"1.2 GB", dur:"—" },
-    { name:"short_clip_fail.mp4",   status:"error",      credits:0,  date:"14 Mar, 21:30", size:"12 MB",  dur:"0:15" },
-  ];
+  useEffect(() => {
+    if (!user?.id) { setLoadingJobs(false); return; }
+    fetch(`/api/jobs?userId=${user.id}`)
+      .then(r => r.json())
+      .then(({ jobs }) => { setJobs(jobs || []); setLoadingJobs(false); })
+      .catch(() => setLoadingJobs(false));
+  }, [user?.id]);
+
+  const totalCreditsUsed = jobs.reduce((a,j) => a + (j.credits_used||0), 0);
+  const doneJobs = jobs.filter(j => j.status === "done");
+  const creditPct = Math.min(100, (totalCreditsUsed / maxCredits) * 100);
 
   const statusCfg = {
     done:       { bg:"rgba(52,211,153,0.1)",  color:C.success, label:"✓ Terminé" },
@@ -723,10 +727,9 @@ function Dashboard({ user, setPage, lang }) {
     error:      { bg:"rgba(248,113,113,0.1)", color:C.danger,  label:"✕ Erreur" },
   };
 
-  const totalSpent = jobs.filter(j=>j.status!=="error").reduce((a,j)=>a+j.credits,0);
-  const barData = [2,4,8,3,14,2];
-  const maxBar = Math.max(...barData);
-  const days = ["L","M","M","J","V","S"];
+  const barData = [0,0,0,0,0,0,totalCreditsUsed];
+  const maxBar = Math.max(...barData, 1);
+  const days = ["L","M","M","J","V","S","A"];
 
   return (
     <div style={{ padding:"2rem", maxWidth:"1100px", margin:"0 auto" }}>
@@ -736,14 +739,12 @@ function Dashboard({ user, setPage, lang }) {
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 320px", gap:"1.5rem", marginBottom:"1.5rem" }}>
-        {/* Left col */}
         <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
-          {/* KPIs */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"1rem" }}>
             {[
               { label:"Crédits restants", value:user?.credits||0, sub:`Plan ${user?.plan||"Free"}`, color:C.accent },
-              { label:"Vidéos traitées", value:jobs.filter(j=>j.status==="done").length, sub:"ce mois-ci", color:C.cyan },
-              { label:"Crédits utilisés", value:totalSpent, sub:"ce mois-ci", color:C.pink },
+              { label:"Vidéos traitées", value:doneJobs.length, sub:"au total", color:C.cyan },
+              { label:"Crédits utilisés", value:totalCreditsUsed, sub:"au total", color:C.pink },
             ].map((k,i) => (
               <div key={i} className="card" style={{ padding:"1rem" }}>
                 <div style={{ fontSize:"11px", color:C.textMuted, marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{k.label}</div>
@@ -753,11 +754,10 @@ function Dashboard({ user, setPage, lang }) {
             ))}
           </div>
 
-          {/* Credit bar */}
           <div className="card">
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
-              <span style={{ fontSize:"13px", fontWeight:600 }}>Crédits utilisés ce mois</span>
-              <span style={{ fontSize:"13px", color: creditPct > 80 ? C.danger : C.textMuted }}>{totalSpent} / {maxCredits}</span>
+              <span style={{ fontSize:"13px", fontWeight:600 }}>Crédits utilisés</span>
+              <span style={{ fontSize:"13px", color: creditPct > 80 ? C.danger : C.textMuted }}>{totalCreditsUsed} / {maxCredits}</span>
             </div>
             <div style={{ height:"6px", background:C.bgCard2, borderRadius:"999px", overflow:"hidden", marginBottom:"8px" }}>
               <div style={{ height:"100%", width:`${creditPct}%`, background: creditPct > 80 ? C.danger : C.grad, borderRadius:"999px", transition:"width 1s ease" }} />
@@ -770,23 +770,21 @@ function Dashboard({ user, setPage, lang }) {
             )}
           </div>
 
-          {/* Actions */}
           <div style={{ display:"flex", gap:"10px" }}>
             <button className="btn-primary" style={{ flex:1, padding:"12px", fontSize:"14px" }} onClick={()=>setPage("process")}>⬆ Uploader une vidéo</button>
             <button className="btn-secondary" style={{ flex:1, padding:"12px", fontSize:"14px" }} onClick={()=>setPage("batch")}>📦 Traitement batch</button>
           </div>
         </div>
 
-        {/* Right col — usage chart */}
         <div className="card">
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem" }}>
-            <span style={{ fontSize:"13px", fontWeight:600 }}>Dépenses (7 derniers jours)</span>
+            <span style={{ fontSize:"13px", fontWeight:600 }}>Activité récente</span>
             <button className="btn-ghost" style={{ fontSize:"12px", color:C.accent }} onClick={()=>setPage("usage")}>Voir tout →</button>
           </div>
           <div style={{ display:"flex", gap:"6px", alignItems:"flex-end", height:"80px", marginBottom:"8px" }}>
             {barData.map((v,i)=>(
               <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"4px" }}>
-                <div style={{ width:"100%", height:`${(v/maxBar)*70}px`, background:i===barData.length-1?C.grad:`${C.accent}44`, borderRadius:"4px 4px 0 0", transition:"height 0.3s" }} />
+                <div style={{ width:"100%", height:`${(v/maxBar)*70}px`, background:i===barData.length-1?C.grad:`${C.accent}44`, borderRadius:"4px 4px 0 0", transition:"height 0.3s", minHeight: v>0?"4px":"0" }} />
                 <span style={{ fontSize:"9px", color:C.textDim }}>{days[i]}</span>
               </div>
             ))}
@@ -794,52 +792,60 @@ function Dashboard({ user, setPage, lang }) {
           <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:"10px", display:"flex", justifyContent:"space-between" }}>
             <div>
               <div style={{ fontSize:"11px", color:C.textMuted }}>Total crédits</div>
-              <div style={{ fontWeight:700, color:C.accent }}>{barData.reduce((a,b)=>a+b,0)}</div>
+              <div style={{ fontWeight:700, color:C.accent }}>{totalCreditsUsed}</div>
             </div>
             <div>
-              <div style={{ fontSize:"11px", color:C.textMuted }}>Coût estimé</div>
-              <div style={{ fontWeight:700, color:C.pink }}>{(barData.reduce((a,b)=>a+b,0)*0.024).toFixed(2)}€</div>
+              <div style={{ fontSize:"11px", color:C.textMuted }}>Vidéos</div>
+              <div style={{ fontWeight:700 }}>{doneJobs.length}</div>
             </div>
             <div>
-              <div style={{ fontSize:"11px", color:C.textMuted }}>Générations</div>
-              <div style={{ fontWeight:700 }}>{jobs.filter(j=>j.status==="done").length}</div>
+              <div style={{ fontSize:"11px", color:C.textMuted }}>Erreurs</div>
+              <div style={{ fontWeight:700, color: jobs.filter(j=>j.status==="error").length>0?C.danger:C.text }}>{jobs.filter(j=>j.status==="error").length}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* History */}
       <div className="card" style={{ padding:0, overflow:"hidden" }}>
         <div style={{ padding:"14px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <span style={{ fontSize:"13px", fontWeight:700 }}>Historique récent</span>
           <button className="btn-ghost" style={{ fontSize:"12px", color:C.accent }} onClick={()=>setPage("usage")}>Voir tout →</button>
         </div>
-        <table>
-          <thead><tr style={{ borderBottom:`1px solid ${C.border}` }}>
-            {["Crédits","Fichier","Taille","Durée","Statut","Date",""].map((h,i)=>(
-              <th key={i} style={{ padding:"10px 16px", textAlign:i===0?"center":"left", fontSize:"11px", color:C.textMuted, fontWeight:500, textTransform:"uppercase" }}>{h}</th>
-            ))}
-          </tr></thead>
-          <tbody>
-            {jobs.map((j,i)=>{
-              const sc = statusCfg[j.status];
-              return (
-                <tr key={i} style={{ borderBottom: i<jobs.length-1?`1px solid ${C.border}`:"none" }}>
-                  <td style={{ padding:"12px 16px", textAlign:"center", fontWeight:700, color: j.credits>0?C.danger:C.textDim }}>{j.credits>0?`-${j.credits}`:"—"}</td>
-                  <td style={{ padding:"12px 16px", fontWeight:500, fontSize:"13px" }}>{j.name}</td>
-                  <td style={{ padding:"12px 16px", fontSize:"12px", color:C.textMuted }}>{j.size}</td>
-                  <td style={{ padding:"12px 16px", fontSize:"12px", color:C.textMuted, fontFamily:"monospace" }}>{j.dur}</td>
-                  <td style={{ padding:"12px 16px" }}><span className="badge" style={{ background:sc.bg, color:sc.color, fontSize:"11px" }}>{sc.label}</span></td>
-                  <td style={{ padding:"12px 16px", fontSize:"11px", color:C.textDim }}>{j.date}</td>
-                  <td style={{ padding:"12px 16px" }}>
-                    {j.status==="done" && <button className="btn-secondary" style={{ padding:"4px 12px", fontSize:"11px" }}>↓ Télécharger</button>}
-                    {j.status==="error" && <button className="btn-secondary" style={{ padding:"4px 12px", fontSize:"11px", color:C.warning }}>↻ Retry</button>}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        {loadingJobs ? (
+          <div style={{ padding:"3rem", textAlign:"center", color:C.textMuted, fontSize:"13px" }}>Chargement...</div>
+        ) : jobs.length === 0 ? (
+          <div style={{ padding:"3rem", textAlign:"center" }}>
+            <div style={{ fontSize:"32px", marginBottom:"10px" }}>🎬</div>
+            <div style={{ fontWeight:600, marginBottom:"6px" }}>Aucune vidéo traitée pour l'instant</div>
+            <div style={{ fontSize:"13px", color:C.textMuted, marginBottom:"1.5rem" }}>Upload ta première vidéo pour commencer</div>
+            <button className="btn-primary" style={{ padding:"10px 24px", fontSize:"14px" }} onClick={()=>setPage("process")}>⬆ Uploader une vidéo</button>
+          </div>
+        ) : (
+          <table>
+            <thead><tr style={{ borderBottom:`1px solid ${C.border}` }}>
+              {["Crédits","Fichier","Statut","Date",""].map((h,i)=>(
+                <th key={i} style={{ padding:"10px 16px", textAlign:i===0?"center":"left", fontSize:"11px", color:C.textMuted, fontWeight:500, textTransform:"uppercase" }}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {jobs.slice(0,10).map((j,i)=>{
+                const sc = statusCfg[j.status] || statusCfg.error;
+                return (
+                  <tr key={j.id} style={{ borderBottom: i<Math.min(jobs.length,10)-1?`1px solid ${C.border}`:"none" }}>
+                    <td style={{ padding:"12px 16px", textAlign:"center", fontWeight:700, color: (j.credits_used||0)>0?C.danger:C.textDim }}>{(j.credits_used||0)>0?`-${j.credits_used}`:"—"}</td>
+                    <td style={{ padding:"12px 16px", fontWeight:500, fontSize:"13px" }}>{j.filename||"—"}</td>
+                    <td style={{ padding:"12px 16px" }}><span className="badge" style={{ background:sc.bg, color:sc.color, fontSize:"11px" }}>{sc.label}</span></td>
+                    <td style={{ padding:"12px 16px", fontSize:"11px", color:C.textDim }}>{new Date(j.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}</td>
+                    <td style={{ padding:"12px 16px" }}>
+                      {j.status==="done" && j.output_url && <a href={j.output_url} target="_blank" rel="noopener noreferrer"><button className="btn-secondary" style={{ padding:"4px 12px", fontSize:"11px" }}>↓ Télécharger</button></a>}
+                      {j.status==="error" && <button className="btn-secondary" style={{ padding:"4px 12px", fontSize:"11px", color:C.warning }}>↻ Retry</button>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
