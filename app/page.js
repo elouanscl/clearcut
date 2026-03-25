@@ -238,7 +238,7 @@ function Nav({ page, setPage, user, setUser, lang, setLang }) {
     <nav style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 2rem", height:"64px", background:C.bgNav, backdropFilter:"blur(16px)", borderBottom:`1px solid ${C.border}`, position:"sticky", top:0, zIndex:100 }}>
       <div onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:"8px", cursor:"pointer" }}>
         <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:C.grad, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
-          <img src="/logo2.png" alt="ClearCut" style={{ width:"26px", height:"26px", objectFit:"contain" }} />
+          <img src="/logo.png" alt="ClearCut" style={{ width:"26px", height:"26px", objectFit:"contain" }} />
         </div>
         <span style={{ fontWeight:800, fontSize:"17px", letterSpacing:"-0.5px" }}>ClearCut</span>
       </div>
@@ -932,35 +932,93 @@ function Dashboard({ user, setPage, lang }) {
 }
 
 // ─── PROCESS PAGE ─────────────────────────────────────────────────────────────
-function ProcessPage({ setPage }) {
+function ProcessPage({ setPage, user, setUser }) {
   const [file, setFile] = useState(null);
   const [dragging, setDragging] = useState(false);
+  const [status, setStatus] = useState("idle"); // idle, uploading, processing, done, error
   const [progress, setProgress] = useState(0);
-  const [processing, setProcessing] = useState(false);
+  const [outputUrl, setOutputUrl] = useState(null);
+  const [error, setError] = useState(null);
 
-  const start = () => {
-    if (!file) return;
-    setProcessing(true);
-    let p = 0;
-    const iv = setInterval(() => {
-      p += Math.random() * 8 + 2;
-      if (p >= 100) { p = 100; clearInterval(iv); setTimeout(()=>setPage("result"), 600); }
-      setProgress(Math.min(100, p));
-    }, 200);
+  const start = async () => {
+    if (!file || !user?.id) return;
+    setStatus("uploading");
+    setProgress(10);
+
+    try {
+      // Step 1 — Upload video
+      const formData = new FormData();
+      formData.append('video', file);
+      formData.append('userId', user.id);
+
+      const uploadRes = await fetch('/api/upload-video', { method: 'POST', body: formData });
+      const { jobId, videoUrl, error: uploadError } = await uploadRes.json();
+      if (uploadError) throw new Error(uploadError);
+
+      setProgress(30);
+      setStatus("processing");
+
+      // Step 2 — Process with Replicate
+      const processRes = await fetch('/api/process-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoUrl, jobId, userId: user.id }),
+      });
+      const { outputUrl: url, error: processError } = await processRes.json();
+      if (processError) throw new Error(processError);
+
+      setProgress(100);
+      setOutputUrl(url);
+      setStatus("done");
+
+      // Update user credits
+      if (setUser) setUser(prev => ({ ...prev, credits: (prev.credits || 0) - 2 }));
+
+    } catch (err) {
+      setError(err.message);
+      setStatus("error");
+    }
   };
+
+  // Fake progress animation while processing
+  useEffect(() => {
+    if (status === "processing") {
+      const iv = setInterval(() => {
+        setProgress(p => p < 90 ? p + Math.random() * 3 : p);
+      }, 2000);
+      return () => clearInterval(iv);
+    }
+  }, [status]);
+
+  if (status === "done") return (
+    <div style={{ padding:"2rem", maxWidth:"700px", margin:"0 auto", textAlign:"center" }}>
+      <div className="card scale-in" style={{ padding:"3rem" }}>
+        <div style={{ fontSize:"52px", marginBottom:"1rem" }}>🎉</div>
+        <h2 style={{ fontSize:"1.5rem", fontWeight:800, marginBottom:"8px" }}>Sous-titres supprimés !</h2>
+        <p style={{ color:C.textMuted, marginBottom:"2rem" }}>Ta vidéo est prête. 2 crédits ont été utilisés.</p>
+        <div style={{ display:"flex", gap:"10px", justifyContent:"center" }}>
+          <a href={outputUrl} download target="_blank" rel="noopener noreferrer">
+            <button className="btn-primary" style={{ padding:"12px 28px", fontSize:"15px" }}>↓ Télécharger la vidéo</button>
+          </a>
+          <button className="btn-secondary" style={{ padding:"12px 28px", fontSize:"15px" }} onClick={()=>{ setFile(null); setStatus("idle"); setProgress(0); setOutputUrl(null); }}>
+            Traiter une autre vidéo
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ padding:"2rem", maxWidth:"700px", margin:"0 auto" }}>
       <h1 style={{ fontSize:"1.6rem", fontWeight:800, letterSpacing:"-0.8px", marginBottom:"0.5rem" }}>Uploader une vidéo</h1>
-      <p style={{ color:C.textMuted, fontSize:"14px", marginBottom:"2rem" }}>Formats acceptés : MP4, MOV, MKV, AVI, WebM · Max 2 Go</p>
+      <p style={{ color:C.textMuted, fontSize:"14px", marginBottom:"2rem" }}>Formats acceptés : MP4, MOV, MKV, AVI, WebM · Max 2 Go · 2 crédits/min</p>
 
-      <div
-        className="card"
+      <div className="card"
         onDragOver={e=>{e.preventDefault();setDragging(true)}}
         onDragLeave={()=>setDragging(false)}
         onDrop={e=>{e.preventDefault();setDragging(false);setFile(e.dataTransfer.files[0])}}
         style={{ border:`2px dashed ${dragging ? C.accent : C.borderL}`, borderRadius:"20px", padding:"3rem", textAlign:"center", cursor:"pointer", transition:"all 0.2s", background: dragging ? "rgba(124,111,255,0.05)" : C.bgCard }}
-        onClick={()=>document.getElementById("fi").click()}>
+        onClick={()=>status==="idle"&&document.getElementById("fi").click()}>
         <input id="fi" type="file" accept="video/*" style={{ display:"none" }} onChange={e=>setFile(e.target.files[0])} />
         {file ? (
           <>
@@ -977,22 +1035,34 @@ function ProcessPage({ setPage }) {
         )}
       </div>
 
-      {processing && (
+      {(status === "uploading" || status === "processing") && (
         <div className="card" style={{ marginTop:"1.5rem" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"10px" }}>
-            <span style={{ fontSize:"13px", fontWeight:600 }}>Suppression en cours…</span>
+            <span style={{ fontSize:"13px", fontWeight:600 }}>
+              {status === "uploading" ? "📤 Upload en cours…" : "🤖 L'IA supprime les sous-titres…"}
+            </span>
             <span style={{ fontSize:"13px", color:C.accent, fontWeight:700 }}>{Math.round(progress)}%</span>
           </div>
           <div style={{ height:"8px", background:C.bgCard2, borderRadius:"999px", overflow:"hidden" }}>
-            <div style={{ height:"100%", width:`${progress}%`, background:C.grad, borderRadius:"999px", transition:"width 0.2s" }} />
+            <div style={{ height:"100%", width:`${progress}%`, background:C.grad, borderRadius:"999px", transition:"width 0.5s" }} />
           </div>
-          <div style={{ fontSize:"12px", color:C.textMuted, marginTop:"8px" }}>L'IA analyse chaque frame…</div>
+          <div style={{ fontSize:"12px", color:C.textMuted, marginTop:"8px" }}>
+            {status === "uploading" ? "Upload de ta vidéo sur nos serveurs…" : "Traitement en cours, ça peut prendre 1-3 minutes selon la durée…"}
+          </div>
         </div>
       )}
 
-      {!processing && file && (
+      {status === "error" && (
+        <div className="card" style={{ marginTop:"1.5rem", border:`1px solid rgba(248,113,113,0.3)`, background:"rgba(248,113,113,0.05)" }}>
+          <div style={{ color:C.danger, fontWeight:600, marginBottom:"6px" }}>✕ Erreur</div>
+          <div style={{ fontSize:"13px", color:C.textMuted }}>{error}</div>
+          <button className="btn-secondary" style={{ marginTop:"1rem", fontSize:"13px" }} onClick={()=>setStatus("idle")}>Réessayer</button>
+        </div>
+      )}
+
+      {status === "idle" && file && (
         <button className="btn-primary" style={{ width:"100%", padding:"14px", fontSize:"15px", marginTop:"1.5rem" }} onClick={start}>
-          ✦ Supprimer les sous-titres
+          ✦ Supprimer les sous-titres — 2 crédits
         </button>
       )}
     </div>
@@ -2878,7 +2948,7 @@ export default function App() {
       case "signup":   return <AuthPage type="signup" setPage={setPage} setUser={setUser} showOnboarding={()=>setShowOnboarding(true)} />;
       case "checkout": return <CheckoutPage plan={checkoutPlan} setPage={setPage} setUser={setUser} user={user} />;
       case "dashboard":return <Dashboard user={user} setPage={setPage} lang={lang} />;
-      case "process":  return <ProcessPage setPage={setPage} />;
+      case "process":  return <ProcessPage setPage={setPage} user={user} setUser={setUser} />;
       case "batch":    return <BatchPage setPage={setPage} user={user} setUser={setUser} />;
       case "billing":  return <BillingPage user={user} setPage={setPage} />;
       case "settings": return <SettingsPage user={user} setUser={setUser} setPage={setPage} />;
