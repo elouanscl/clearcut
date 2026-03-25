@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: false,
+  },
+}
 export async function POST(request) {
   try {
     const formData = await request.formData()
